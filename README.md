@@ -1,0 +1,2 @@
+QuasarDB datasource for Grafana
+===============================
