@@ -6,11 +6,18 @@
   "author": "Remi de Groot <rdg94@live.nl>",
   "license": "ISC",
   "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-core": "^6.26.0",
+    "babel-plugin-transform-es2015-modules-systemjs": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "cross-env": "^5.1.4",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.10.0"
+    "eslint-plugin-import": "^2.10.0",
+    "rimraf": "^2.6.2"
   },
   "scripts": {
+    "build": "rimraf ./dist && cross-env NODE_ENV=production && babel ./src -d ./dist",
     "lint": "eslint ."
   }
 }
