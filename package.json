@@ -2,7 +2,7 @@
   "name": "grafana-quasar-datasource",
   "version": "1.0.0",
   "description": "QuasarDB datasource for Grafana",
-  "main": "src/index.js",
+  "main": "src/module.js",
   "author": "Remi de Groot <rdg94@live.nl>",
   "license": "ISC",
   "devDependencies": {
@@ -17,7 +17,10 @@
     "rimraf": "^2.6.2"
   },
   "scripts": {
-    "build": "rimraf ./dist && cross-env NODE_ENV=production && babel ./src -d ./dist",
+    "start": "yarn build --watch",
+    "build": "rimraf ./dist && mkdir dist && yarn build:cp && yarn build:js",
+    "build:cp": "cp -r ./src/img ./dist/img && cp ./src/plugin.json ./dist",
+    "build:js": "cross-env NODE_ENV=production && babel ./src -d ./dist",
     "lint": "eslint . --cache"
   }
 }

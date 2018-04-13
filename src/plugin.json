@@ -1,0 +1,31 @@
+{
+  "type": "datasource",
+  "name": "QuasarDB",
+  "id": "quasardb-datasource",
+
+  "metrics": true,
+  "annotations": true,
+
+  "partials": {
+    "config": "public/app/plugins/datasource/simplejson/partials/config.html"
+  },
+
+  "info": {
+    "description": "QuasarDB datasource for Grafana",
+    "author": {
+      "name": "QuasarDB",
+      "url": "https://quasardb.net"
+    },
+    "logos": {
+      "small": "img/logo_quasardb.png",
+      "large": "img/logo_quasardb.png"
+    },
+    "version": "0.0.1",
+    "updated": "2018-05-01"
+  },
+
+  "dependencies": {
+    "grafanaVersion": "5.x.x",
+    "plugins": []
+  }
+}
