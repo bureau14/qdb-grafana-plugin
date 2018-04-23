@@ -13,6 +13,8 @@
     "babel-plugin-transform-es2015-modules-systemjs": "^6.24.1",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.1",
+    "concurrently": "^3.5.1",
+    "cpx": "^1.5.0",
     "cross-env": "^5.1.4",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
@@ -20,9 +22,10 @@
     "rimraf": "^2.6.2"
   },
   "scripts": {
-    "start": "yarn build --watch",
-    "build": "rimraf ./dist && mkdir dist && yarn build:cp && yarn build:js",
-    "build:cp": "cp -r ./src/img ./src/partials ./src/plugin.json ./dist/",
+    "start": "yarn build:rm && concurrently \"yarn build:cp --watch\" \"yarn build:js --watch\"",
+    "build": "yarn build:rm && concurrently \"yarn build:cp\" \"yarn build:js\"",
+    "build:rm": "rimraf ./dist && mkdir dist ",
+    "build:cp": "cpx -v \"./src/{img/**/*,css/**/*,partials/**/*,plugin.json}\" ./dist",
     "build:js": "cross-env NODE_ENV=production && babel ./src -d ./dist",
     "lint": "eslint . --cache"
   }
