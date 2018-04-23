@@ -1,4 +1,11 @@
 {
+  "parser": "babel-eslint",
   "extends": "airbnb-base",
-  "rules": { "linebreak-style": "off" }
+  "rules": {
+    "linebreak-style": "off",
+    "import/extensions": ["ignorePackages"],
+    "import/no-unresolved": [2, {
+      "ignore": ['app/plugins/sdk']
+    }]
+  }
 }

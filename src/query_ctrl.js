@@ -1,6 +1,8 @@
 import { QueryCtrl as GrafanaQueryCtrl } from 'app/plugins/sdk';
 
 export default class QueryCtrl extends GrafanaQueryCtrl {
+  static templateUrl = 'partials/query.editor.html';
+
   constructor($scope, $injector) {
     super($scope, $injector);
 
