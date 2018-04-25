@@ -1,7 +1,7 @@
 {
   "type": "datasource",
   "name": "QuasarDB",
-  "id": "quasardb-datasource",
+  "id": "qdb-grafana-datasource",
 
   "metrics": true,
   "annotations": true,

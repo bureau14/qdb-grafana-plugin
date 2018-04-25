@@ -1,5 +1,5 @@
 {
-  "name": "grafana-quasar-datasource",
+  "name": "qdb-grafana-datasource",
   "version": "1.0.0",
   "description": "QuasarDB datasource for Grafana",
   "main": "src/module.js",
