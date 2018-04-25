@@ -9,6 +9,9 @@ export default class QueryCtrl extends GrafanaQueryCtrl {
     this.scope = $scope;
     this.target.target = this.target.target || 'select metric';
     this.target.type = this.target.type || 'timeserie';
+
+    // this.target.rawSql = 'select 1 from test in range (2000, 2020)';
+    this.target.rawSql = 'select sum(bidSize) from test in range(2017-10-12T08:45:00, 2017-10-12T09:35:00) group by 30s';
   }
 
   getOptions(query) {
