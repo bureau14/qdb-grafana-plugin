@@ -3,6 +3,7 @@
   "extends": "airbnb-base",
   "rules": {
     "linebreak-style": "off",
+    "class-methods-use-this": "off",
     "import/extensions": ["ignorePackages"],
     "import/no-unresolved": [2, {
       "ignore": ['app/plugins/sdk']
