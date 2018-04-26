@@ -3,7 +3,7 @@ export default class Datasource {
     this.name = instanceSettings.name;
     this.id = instanceSettings.id;
 
-    this.url = 'http://localhost:8080';
+    this.url = instanceSettings.url;
 
     this.$q = $q;
     this.backendSrv = backendSrv;
