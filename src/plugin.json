@@ -6,11 +6,8 @@
   "metrics": true,
   "annotations": true,
 
-  "partials": {
-    "config": "public/app/plugins/datasource/simplejson/partials/config.html"
-  },
-
   "info": {
+    "version": "1.0.0",
     "description": "QuasarDB datasource for Grafana",
     "author": {
       "name": "QuasarDB",
@@ -19,9 +16,7 @@
     "logos": {
       "small": "img/logo_quasardb.png",
       "large": "img/logo_quasardb.png"
-    },
-    "version": "0.0.1",
-    "updated": "2018-05-01"
+    }
   },
 
   "dependencies": {

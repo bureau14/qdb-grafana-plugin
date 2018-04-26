@@ -49,12 +49,12 @@ export default class Datasource {
   }
 
   annotationQuery(options) {
-    console.log('annotationQuery:', JSON.parse(JSON.stringify(options)));
+    console.log('annotationQuery:', options);
     throw new Error('annotationQuery is not yet implemented.');
   }
 
   metricFindQuery(query) {
-    console.log('metricFindQuery:', JSON.parse(JSON.stringify(query)));
+    console.log('metricFindQuery:', query);
     throw new Error('metricFindQuery is not yet implemented.');
   }
 
