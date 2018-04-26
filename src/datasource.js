@@ -59,10 +59,26 @@ export default class Datasource {
   }
 
   testDatasource() {
-    return this.$q.when({
-      status: 'success',
-      message: 'Data source is working',
-      title: 'Success',
-    });
+    return this.backendSrv.datasourceRequest({
+      url: `${this.url}/global_status`,
+      method: 'GET',
+    })
+      .then(() => {
+        const status = 'success';
+        const message = 'QuasarDB connection is OK!';
+
+        return { status, message };
+      })
+      .catch((err) => {
+        const status = 'error';
+        const message =
+          'Unable to connect to datasource. ' +
+          'See console for detailed information.';
+
+        // eslint-disable-next-line no-console
+        console.error('QDB CONNECTION ERROR:', err);
+
+        return { status, message };
+      });
   }
 }
