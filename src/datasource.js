@@ -75,8 +75,10 @@ export default class Datasource {
           'Unable to connect to datasource. ' +
           'See console for detailed information.';
 
-        // eslint-disable-next-line no-console
-        console.error('QDB CONNECTION ERROR:', err);
+        if (process.env.NODE_ENV !== 'test') {
+          // eslint-disable-next-line no-console
+          console.error('QDB CONNECTION ERROR:', err);
+        }
 
         return { status, message };
       });

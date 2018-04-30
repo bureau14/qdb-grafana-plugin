@@ -11,14 +11,18 @@
     "babel-eslint": "^8.2.3",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-plugin-transform-es2015-modules-systemjs": "^6.24.1",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.1",
+    "chai": "^4.1.2",
     "concurrently": "^3.5.1",
     "cpx": "^1.5.0",
     "cross-env": "^5.1.4",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-plugin-import": "^2.10.0",
+    "mocha": "^5.1.1",
+    "q": "^1.5.1",
     "rimraf": "^2.6.2"
   },
   "scripts": {
@@ -26,7 +30,8 @@
     "build": "yarn build:rm && concurrently \"yarn build:cp\" \"yarn build:js\"",
     "build:rm": "rimraf ./dist && mkdir dist ",
     "build:cp": "cpx -v \"./src/{img/**/*,partials/**/*,plugin.json}\" ./dist",
-    "build:js": "cross-env NODE_ENV=production && babel ./src -d ./dist",
-    "lint": "eslint . --cache"
+    "build:js": "cross-env NODE_ENV=production BABEL_ENV=production babel ./src -d ./dist --source-maps",
+    "lint": "eslint . --cache",
+    "test": "cross-env NODE_ENV=test BABEL_ENV=test mocha --require babel-core/register ./test"
   }
 }

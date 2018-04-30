@@ -2,7 +2,16 @@
   "presets": ["env"],
   "plugins": [
     "transform-class-properties",
-    "transform-object-rest-spread",
-    "transform-es2015-modules-systemjs"
-  ]
+    "transform-object-rest-spread"
+  ],
+  "env": {
+    "production": {
+      "plugins": [
+        "transform-es2015-modules-systemjs",
+        ["transform-inline-environment-variables", {
+          "include": ["NODE_ENV"]
+        }]
+      ]
+    }
+  }
 }
