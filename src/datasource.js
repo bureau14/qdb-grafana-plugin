@@ -13,7 +13,7 @@ export default class Datasource {
   // ---------------------------------------------------------------------------
 
   doRequest = query => this.backendSrv.datasourceRequest({
-    url: `${this.url}/query_exp?query=${query}&date_format=js`,
+    url: `${this.url}/query_exp?query=${encodeURIComponent(query)}&date_format=js`,
     method: 'GET',
   });
 
