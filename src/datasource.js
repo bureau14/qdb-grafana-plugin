@@ -36,7 +36,12 @@ export default class Datasource {
     const queries = options.targets
       .filter(x => !x.hide)
       .filter(x => x.rawSql)
-      .map(x => x.rawSql);
+      .map(x => x.rawSql)
+      .map(query => window._.template(query)({
+        from: options.range.from.format('YYYY-MM-DD[T]HH:mm:ss'),
+        to: options.range.to.format('YYYY-MM-DD[T]HH:mm:ss'),
+        interval: options.interval,
+      }));
 
     if (!queries.length) {
       const data = [];
