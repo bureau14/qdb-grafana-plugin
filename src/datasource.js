@@ -40,7 +40,7 @@ export default class Datasource {
       .map(query => window._.template(query)({
         from: options.range.from.format('YYYY-MM-DD[T]HH:mm:ss'),
         to: options.range.to.format('YYYY-MM-DD[T]HH:mm:ss'),
-        interval: options.interval,
+        interval: (options.interval.substring(options.interval.length-1) == 'm' ? options.interval + 'in' : options.interval),
       }));
 
     if (!queries.length) {
