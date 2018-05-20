@@ -18,9 +18,11 @@ export default class Datasource {
   });
 
   transformResponse = (response) => {
+    const { tables } = response.data;
+    const results = tables[0] ? tables[0].results : [];
+
     const target = 'select metric';
-    const datapoints = response.data.tables[0].results
-      .map(([date, sum]) => [sum, Date.parse(date)]);
+    const datapoints = results.map(([date, sum]) => [sum, Date.parse(date)]);
 
     return { target, datapoints };
   };
