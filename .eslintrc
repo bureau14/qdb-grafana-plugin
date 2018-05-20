@@ -7,6 +7,7 @@
   "rules": {
     "linebreak-style": "off",
     "class-methods-use-this": "off",
+    "no-underscore-dangle": "off",
     "import/extensions": ["ignorePackages"],
     "import/no-unresolved": [2, {
       "ignore": ['app/plugins/sdk']

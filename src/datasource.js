@@ -30,18 +30,45 @@ export default class Datasource {
     return { data };
   };
 
+  getVariables = (options) => {
+    const toValue = x => ({
+      text: x,
+      value: x,
+    });
+
+    const replaceInterval = x => (
+      x.slice(-1) === 'm'
+        ? `${x}in`
+        : x
+    );
+
+    const range = {
+      from: options.range.from.format('YYYY-MM-DD[T]HH:mm:ss'),
+      to: options.range.to.format('YYYY-MM-DD[T]HH:mm:ss'),
+    };
+
+    const vars = {
+      __from: range.from,
+      __to: range.to,
+      __range: `range(${range.from}, ${range.to})`,
+      __interval: replaceInterval(options.scopedVars.__interval.value),
+    };
+
+    return {
+      ...options.scopedVars,
+      ...Object.keys(vars)
+        .map(key => ({ [key]: toValue(vars[key]) }))
+        .reduce((x, y) => ({ ...y, ...x })),
+    };
+  };
+
   // ---------------------------------------------------------------------------
 
   query(options) {
+    const variables = this.getVariables(options);
     const queries = options.targets
-      .filter(x => !x.hide)
-      .filter(x => x.rawSql)
-      .map(x => x.rawSql)
-      .map(query => window._.template(query)({
-        from: options.range.from.format('YYYY-MM-DD[T]HH:mm:ss'),
-        to: options.range.to.format('YYYY-MM-DD[T]HH:mm:ss'),
-        interval: (options.interval.substring(options.interval.length-1) == 'm' ? options.interval + 'in' : options.interval),
-      }));
+      .filter(x => (!x.hide && x.rawSql))
+      .map(x => this.templateSrv.replace(x.rawSql, variables));
 
     if (!queries.length) {
       const data = [];
