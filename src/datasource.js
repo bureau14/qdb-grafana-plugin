@@ -1,3 +1,12 @@
+function zipObject(keys, values) {
+  const reducer = (acc, key, idx) => ({
+    ...acc,
+    [key]: values[idx],
+  });
+
+  return keys.reduce(reducer, {});
+}
+
 export default class Datasource {
   constructor(instanceSettings, $q, backendSrv, templateSrv) {
     this.name = instanceSettings.name;
@@ -12,25 +21,12 @@ export default class Datasource {
 
   // ---------------------------------------------------------------------------
 
-  doRequest = query => this.backendSrv.datasourceRequest({
+  doQuery = query => this.backendSrv.datasourceRequest({
     url: `${this.url}/query_exp?query=${encodeURIComponent(query)}&date_format=js`,
     method: 'GET',
   });
 
-  transformResponse = (response) => {
-    const { tables } = response.data;
-    const results = tables[0] ? tables[0].results : [];
-
-    const target = 'select metric';
-    const datapoints = results.map(([date, sum]) => [sum, Date.parse(date)]);
-
-    return { target, datapoints };
-  };
-
-  transformAll = (results) => {
-    const data = results.map(this.transformResponse);
-    return { data };
-  };
+  doQueries = queries => Promise.all(queries.map(this.doQuery));
 
   getVariables = (options) => {
     const toValue = x => ({
@@ -53,20 +49,39 @@ export default class Datasource {
       __from: range.from,
       __to: range.to,
       __range: `range(${range.from}, ${range.to})`,
-      __interval: replaceInterval(options.scopedVars.__interval.value),
     };
+
+    if (options.scopedVars && options.scopedVars.__interval) {
+      const { value } = options.scopedVars.__interval;
+      vars.__interval = replaceInterval(value);
+    }
 
     return {
       ...options.scopedVars,
       ...Object.keys(vars)
         .map(key => ({ [key]: toValue(vars[key]) }))
-        .reduce((x, y) => ({ ...y, ...x })),
+        .reduce((x, y) => ({ ...y, ...x }), {}),
     };
   };
 
   // ---------------------------------------------------------------------------
 
   query(options) {
+    const transformResponse = (response) => {
+      const { tables } = response.data;
+      const results = tables[0] ? tables[0].results : [];
+
+      const target = 'select metric';
+      const datapoints = results.map(([date, sum]) => [sum, Date.parse(date)]);
+
+      return { target, datapoints };
+    };
+
+    const transformAll = (results) => {
+      const data = results.map(transformResponse);
+      return { data };
+    };
+
     const variables = this.getVariables(options);
     const queries = options.targets
       .filter(x => (!x.hide && x.rawSql))
@@ -77,14 +92,44 @@ export default class Datasource {
       return this.$q.when({ data });
     }
 
-    const requests = queries.map(this.doRequest);
-    return Promise.all(requests)
-      .then(this.transformAll);
+    return this.doQueries(queries).then(transformAll);
   }
 
   annotationQuery(options) {
-    console.log('annotationQuery:', options);
-    throw new Error('annotationQuery is not yet implemented.');
+    const transformResponse = (response) => {
+      if (!response.data.tables.length) {
+        return [];
+      }
+
+      const data = response.data.tables[0];
+      const keys = data.columns_names;
+
+      return data.results.map((result) => {
+        const obj = zipObject(keys, result);
+
+        const { annotation } = options;
+        const { title, text } = obj;
+
+        const time = Date.parse(obj.timestamp);
+        const tags = obj.tags
+          ? obj.tags.trim().split(/\s*,\s*/)
+          : [];
+
+        return { annotation, time, title, text, tags };
+      });
+    };
+
+    const rawQuery = options.annotation.query;
+
+    if (!rawQuery) {
+      const message = 'Query missing in annotation definition';
+      return this.$q.reject({ message });
+    }
+
+    const variables = this.getVariables(options);
+    const query = this.templateSrv.replace(rawQuery, variables);
+
+    return this.doQuery(query).then(transformResponse);
   }
 
   metricFindQuery(query) {
