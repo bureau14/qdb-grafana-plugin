@@ -71,7 +71,7 @@ export default class Datasource {
       const { tables } = response.data;
       const results = tables[0] ? tables[0].results : [];
 
-      const target = 'select metric';
+      const target = (tables[0] ? tables[0].table_name + '.' + tables[0].columns_names[1] : '');
       const datapoints = results.map(([date, sum]) => [sum, Date.parse(date)]);
 
       return { target, datapoints };
