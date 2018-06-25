@@ -41,8 +41,8 @@ export default class Datasource {
     );
 
     const range = {
-      from: options.range.from.format('YYYY-MM-DD[T]HH:mm:ss'),
-      to: options.range.to.format('YYYY-MM-DD[T]HH:mm:ss'),
+      from: options.range.from.utc().format('YYYY-MM-DD[T]HH:mm:ss'),
+      to: options.range.to.utc().format('YYYY-MM-DD[T]HH:mm:ss'),
     };
 
     const vars = {
