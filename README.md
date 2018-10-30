@@ -9,7 +9,7 @@ Requires [node](https://nodejs.org/en/) and [yarn](https://yarnpkg.com/en/).
 
 ```sh
 cd <grafana-root>/data/plugins
-git clone -b dev git@github.com:bureau14/qdb-grafana-plugin.git
+git clone git@github.com:bureau14/qdb-grafana-plugin.git
 yarn && yarn build
 ```
 
