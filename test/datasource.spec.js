@@ -22,10 +22,10 @@ describe('Datasource', function () {
 
   // ---------------------------------------------------------------------------
 
-  it('should use the `global_status` API for connection validation', function () {
+  it('should use the `cluster` API for connection validation', function () {
     backendSrv.datasourceRequest = (request) => {
       expect(request).to.deep.equal({
-        url: '/grafana/proxy/global_status',
+        url: '/grafana/proxy/api/cluster',
         method: 'GET',
       });
 

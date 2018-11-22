@@ -1,18 +1,23 @@
-function zipObject(keys, values) {
-  const reducer = (acc, key, idx) => ({
-    ...acc,
-    [key]: values[idx],
-  });
+// function zipObject(results) {
+//   const reducer = (acc, key, idx) => ({
+//     ...acc,
+//     [results.name]: results.column[idx],
+//   });
 
-  return keys.reduce(reducer, {});
-}
+//   return results.reduce(reducer, {});
+// }
 
 export default class Datasource {
   constructor(instanceSettings, $q, backendSrv, templateSrv) {
     this.name = instanceSettings.name;
     this.id = instanceSettings.id;
 
-    this.url = instanceSettings.url;
+    this.url = instanceSettings.jsonData.url;
+    this.username = instanceSettings.jsonData.name || "";
+    this.usersecret = instanceSettings.jsonData.secret || "";
+
+    this.token = "";
+    this.token_expiry = Date.now();
 
     this.$q = $q;
     this.backendSrv = backendSrv;
@@ -21,9 +26,56 @@ export default class Datasource {
 
   // ---------------------------------------------------------------------------
 
+
+  login = () => this.backendSrv.datasourceRequest({
+    url: `${this.url}/api/login`,
+    method: 'POST',
+    data: `{ "username": "${this.username}", "secret_key": "${this.usersecret}" }`,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+    .then((result) => {
+      this.token = result.data;
+      this.token_expiry = Date.now() + 10/*hours*/ * 60 /*minutes*/ * 60/*seconds*/ * 1000/*milliseconds*/;
+      const status = 'success';
+      const message = 'QuasarDB connection is OK!';
+
+      return { status, message };
+    })
+    .catch((err) => {
+      const status = 'error';
+      const message =
+        'Unable to connect to datasource. ' +
+        'See console for detailed information.';
+
+      if (process.env.NODE_ENV !== 'test') {
+        // eslint-disable-next-line no-console
+        console.error('QDB CONNECTION ERROR:', err);
+      }
+
+      return { status, message };
+    });
+
+  checkToken = () => {
+    if (this.token == "" || (this.token_expiry - Date.now()) < 1000) {
+      var status = ""
+      var message = ""
+      status, message = this.login()
+      if (status == 'error') {
+        return { status, message };
+      }
+    }
+  };
+
   doQuery = query => this.backendSrv.datasourceRequest({
-    url: `${this.url}/query_exp?query=${encodeURIComponent(query)}&date_format=js`,
-    method: 'GET',
+    url: `${this.url}/api/query`,
+    method: 'POST',
+    data: `"${query}"`,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${this.token}`
+    },
   });
 
   doQueries = queries => Promise.all(queries.map(this.doQuery));
@@ -67,18 +119,25 @@ export default class Datasource {
   // ---------------------------------------------------------------------------
 
   query(options) {
+
+    this.checkToken();
     const transformResponse = (response) => {
-      const { tables } = response.data;
-      const results = tables[0] ? tables[0].results : [];
+      const result = response.data;
+      if (result.tables.length === 0) {
+        return [];
+      }
+      const table = result.tables[0];
+      const timestamps = table.columns[0].data;
 
-      const target = (tables[0] ? tables[0].table_name + '.' + tables[0].columns_names[1] : '');
-      const datapoints = results.map(([date, sum]) => [sum, Date.parse(date)]);
+      const target = table.columns[1].name;
+      const datapoints = table.columns[1].data.map((value, idx) =>
+        [value, Date.parse(timestamps[idx])]);
 
-      return { target, datapoints };
+      return [{ target, datapoints }];
     };
 
     const transformAll = (results) => {
-      const data = results.map(transformResponse);
+      const data = results.map(transformResponse).reduce((a, b) => [...a, ...b], []);
       return { data };
     };
 
@@ -96,24 +155,22 @@ export default class Datasource {
   }
 
   annotationQuery(options) {
+    this.checkToken();
     const transformResponse = (response) => {
       if (!response.data.tables.length) {
         return [];
       }
 
       const data = response.data.tables[0];
-      const keys = data.columns_names;
 
-      return data.results.map((result) => {
-        const obj = zipObject(keys, result);
+      return data.columns.map((column) => {
 
         const { annotation } = options;
-        const { title, text } = obj;
+        const { title } = column.name;
+        const { text } = column.name;
+        const { tags } = [];
 
-        const time = Date.parse(obj.timestamp);
-        const tags = obj.tags
-          ? obj.tags.trim().split(/\s*,\s*/)
-          : [];
+        const time = Date.parse(data.columns[0].data[0]);
 
         return { annotation, time, title, text, tags };
       });
@@ -138,28 +195,6 @@ export default class Datasource {
   }
 
   testDatasource() {
-    return this.backendSrv.datasourceRequest({
-      url: `${this.url}/global_status`,
-      method: 'GET',
-    })
-      .then(() => {
-        const status = 'success';
-        const message = 'QuasarDB connection is OK!';
-
-        return { status, message };
-      })
-      .catch((err) => {
-        const status = 'error';
-        const message =
-          'Unable to connect to datasource. ' +
-          'See console for detailed information.';
-
-        if (process.env.NODE_ENV !== 'test') {
-          // eslint-disable-next-line no-console
-          console.error('QDB CONNECTION ERROR:', err);
-        }
-
-        return { status, message };
-      });
+    return this.login()
   }
 }

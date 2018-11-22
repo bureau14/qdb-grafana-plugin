@@ -1,9 +1,10 @@
 export { default as Datasource } from './datasource';
 export { default as QueryCtrl } from './query_ctrl';
+export { default as ConfigCtrl } from './config_ctrl';
 
-export class ConfigCtrl {
-  static templateUrl = 'partials/config.html';
-}
+// export class ConfigCtrl {
+//   static templateUrl = 'partials/config.html';
+// }
 
 export class AnnotationsQueryCtrl {
   static templateUrl = 'partials/annotations.editor.html'
