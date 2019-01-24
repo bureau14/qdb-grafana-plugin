@@ -6,7 +6,7 @@ Installing
 
 ```sh
 cd <grafana-root>/data/plugins
-git clone -b dev git@github.com:bureau14/qdb-grafana-plugin.git
+git clone -b dev https://github.com/bureau14/qdb-grafana-plugin.git
 ```
 
 Now start Grafana and add the QuasarDB datasource.
