@@ -20,7 +20,7 @@ Install dependencies with yarn:
 
 ```sh
 cd <grafana-root>/data/plugins
-git clone git@github.com:bureau14/qdb-grafana-plugin.git
+git clone https://github.com/bureau14/qdb-grafana-plugin.git
 yarn && yarn build
 ```
 
