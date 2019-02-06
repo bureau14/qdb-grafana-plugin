@@ -13,8 +13,9 @@ export default class Datasource {
     this.id = instanceSettings.id;
 
     this.url = instanceSettings.jsonData.url;
-    this.username = instanceSettings.jsonData.name || "";
-    this.usersecret = instanceSettings.jsonData.secret || "";
+    this.securityEnabled = instanceSettings.jsonData.securityEnabled;
+    this.username = (this.securityEnabled && instanceSettings.jsonData.name ? instanceSettings.jsonData.name : "");
+    this.username = (this.securityEnabled && instanceSettings.jsonData.usersecret ? instanceSettings.jsonData.usersecret : "");
 
     this.token = "";
     this.token_expiry = Date.now();
