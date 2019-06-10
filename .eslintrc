@@ -1,17 +1,7 @@
 {
   "parser": "babel-eslint",
-  "extends": "airbnb-base",
-  "env": {
-    "browser": true
-  },
+  "plugins": ["prettier"],
   "rules": {
-    "linebreak-style": "off",
-    "class-methods-use-this": "off",
-    "no-underscore-dangle": "off",
-    "object-curly-newline": "off",
-    "import/extensions": ["ignorePackages"],
-    "import/no-unresolved": [2, {
-      "ignore": ['app/plugins/sdk']
-    }]
+    "prettier/prettier": "error"
   }
 }

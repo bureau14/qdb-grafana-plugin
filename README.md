@@ -1,34 +1,32 @@
-QuasarDB datasource for Grafana
-===============================
+# QuasarDB datasource for Grafana
 
-Installing
-----------
+## Installing
 
 ```sh
 cd <grafana-root>/data/plugins
-git clone -b dev https://github.com/bureau14/qdb-grafana-plugin.git
+git clone git@github.com:bureau14/qdb-grafana-plugin.git
 ```
 
 Now start Grafana and add the QuasarDB datasource.
 
-Development
------------
+## Development
 
-Requires [node](https://nodejs.org/en/) and [yarn](https://yarnpkg.com/en/).
+Requires [node](https://nodejs.org/en/)
 
-Install dependencies with yarn:
+Install dependencies with npm:
 
 ```sh
 cd <grafana-root>/data/plugins
 git clone https://github.com/bureau14/qdb-grafana-plugin.git
-yarn && yarn build
+npm install
+npm run build
 ```
 
 Common commands:
 
 ```sh
-yarn build
-yarn start # Same as `yarn build`, but in watch mode
-yarn test
-yarn lint
+npm run build
+npm run start # Same as `yarn build`, but in watch mode
+npm run test
+npm run lint
 ```

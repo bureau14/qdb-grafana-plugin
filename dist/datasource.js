@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 System.register([], function (_export, _context) {
   "use strict";
@@ -81,15 +81,17 @@ System.register([], function (_export, _context) {
 
           this.login = function () {
             return _this.backendSrv.datasourceRequest({
-              url: _this.url + "/api/login",
+              url: _this.url + '/api/login',
               method: 'POST',
-              data: "{ \"username\": \"" + _this.username + "\", \"secret_key\": \"" + _this.usersecret + "\" }",
+              data: '{ "username": "' + _this.username + '", "secret_key": "' + _this.usersecret + '" }',
               headers: {
                 'Content-Type': 'application/json'
               }
             }).then(function (result) {
-              _this.token = result.data;
-              _this.token_expiry = Date.now() + 10 /*hours*/ * 60 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
+              console.log('Getting token');
+              console.log(result);
+              _this.token = result.data.token;
+              _this.token_expiry = Date.now() + 10 /* hours */ * 60 /* minutes */ * 60 /* seconds */ * 1000; /* milliseconds */
               var status = 'success';
               var message = 'QuasarDB connection is OK!';
 
@@ -98,7 +100,7 @@ System.register([], function (_export, _context) {
               var status = 'error';
               var message = 'Unable to connect to datasource. ' + 'See console for detailed information.';
 
-              if ("production" !== 'test') {
+              if ('production' !== 'test') {
                 // eslint-disable-next-line no-console
                 console.error('QDB CONNECTION ERROR:', err);
               }
@@ -108,11 +110,12 @@ System.register([], function (_export, _context) {
           };
 
           this.checkToken = function () {
-            if (_this.token == "" || _this.token_expiry - Date.now() < 1000) {
-              var status = "";
-              var message = "";
-              status, message = _this.login();
-              if (status == 'error') {
+            if (_this.token === '' || _this.token_expiry - Date.now() < 1000) {
+              var _login = _this.login(),
+                  status = _login.status,
+                  message = _login.message;
+
+              if (status === 'error') {
                 return { status: status, message: message };
               }
             }
@@ -120,12 +123,12 @@ System.register([], function (_export, _context) {
 
           this.doQuery = function (query) {
             return _this.backendSrv.datasourceRequest({
-              url: _this.url + "/api/query",
+              url: _this.url + '/api/query',
               method: 'POST',
-              data: "\"" + query + "\"",
+              data: '{ "query" : "' + query + '" }',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': "Bearer " + _this.token
+                Authorization: 'Bearer ' + _this.token
               }
             });
           };
@@ -143,7 +146,7 @@ System.register([], function (_export, _context) {
             };
 
             var replaceInterval = function replaceInterval(x) {
-              return x.slice(-1) === 'm' ? x + "in" : x;
+              return x.slice(-1) === 'm' ? x + 'in' : x;
             };
 
             var range = {
@@ -154,7 +157,7 @@ System.register([], function (_export, _context) {
             var vars = {
               __from: range.from,
               __to: range.to,
-              __range: "range(" + range.from + ", " + range.to + ")"
+              __range: 'range(' + range.from + ', ' + range.to + ')'
             };
 
             if (options.scopedVars && options.scopedVars.__interval) {
@@ -175,10 +178,10 @@ System.register([], function (_export, _context) {
 
           this.url = instanceSettings.jsonData.url;
           this.securityEnabled = instanceSettings.jsonData.securityEnabled;
-          this.username = this.securityEnabled && instanceSettings.jsonData.name ? instanceSettings.jsonData.name : "";
-          this.username = this.securityEnabled && instanceSettings.jsonData.usersecret ? instanceSettings.jsonData.usersecret : "";
+          this.username = this.securityEnabled && instanceSettings.jsonData.name ? instanceSettings.jsonData.name : 'anonymous';
+          this.usersecret = this.securityEnabled && instanceSettings.jsonData.secret ? instanceSettings.jsonData.secret : '';
 
-          this.token = "";
+          this.token = '';
           this.token_expiry = Date.now();
 
           this.$q = $q;
@@ -188,9 +191,11 @@ System.register([], function (_export, _context) {
 
         // ---------------------------------------------------------------------------
 
+        // eslint-disable-next-line consistent-return
+
 
         _createClass(Datasource, [{
-          key: "query",
+          key: 'query',
           value: function query(options) {
             var _this2 = this;
 
@@ -230,10 +235,13 @@ System.register([], function (_export, _context) {
               return this.$q.when({ data: data });
             }
 
-            return this.doQueries(queries).then(transformAll);
+            return this.doQueries(queries).then(function (results) {
+              console.log(transformAll(results));
+              return transformAll(results);
+            });
           }
         }, {
-          key: "annotationQuery",
+          key: 'annotationQuery',
           value: function annotationQuery(options) {
             this.checkToken();
             var transformResponse = function transformResponse(response) {
@@ -269,13 +277,13 @@ System.register([], function (_export, _context) {
             return this.doQuery(query).then(transformResponse);
           }
         }, {
-          key: "metricFindQuery",
+          key: 'metricFindQuery',
           value: function metricFindQuery(query) {
             console.log('metricFindQuery:', query);
             throw new Error('metricFindQuery is not yet implemented.');
           }
         }, {
-          key: "testDatasource",
+          key: 'testDatasource',
           value: function testDatasource() {
             return this.login();
           }
@@ -284,7 +292,7 @@ System.register([], function (_export, _context) {
         return Datasource;
       }();
 
-      _export("default", Datasource);
+      _export('default', Datasource);
     }
   };
 });
