@@ -51,10 +51,6 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
           _this.target.rawSql = _this.target.rawSql || QueryCtrl.defaultQuery;
           return _this;
         }
-        // static defaultQuery = 'select 1 from test in range (2000, 2020)';
-        // static defaultQuery = 'select sum(bidSize) from test in $__range group by $__interval';
-        // static defaultQuery = 'select min(byteSendRate) from "network_baseline_network_windows_lons111003_infra" in $__range group by $__interval'
-
 
         return QueryCtrl;
       }(GrafanaQueryCtrl);

@@ -17,14 +17,10 @@ System.register([], function (_export, _context) {
       Config = function Config($scope, datasourceSrv) {
         _classCallCheck(this, Config);
 
-        this.url = '';
-        this.username = '';
-        this.usersecret = '';
-
-        this.url = this.current.jsonData.url;
+        this.url = this.current.jsonData.url || '';
+        this.name = this.current.jsonData.name || '';
+        this.secret = this.current.jsonData.secret || '';
         this.securityEnabled = this.current.jsonData.securityEnabled;
-        this.name = this.current.jsonData.name;
-        this.secret = this.current.jsonData.secret;
         this.datasourceSrv = datasourceSrv;
       };
 
