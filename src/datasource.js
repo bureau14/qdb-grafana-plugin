@@ -22,8 +22,6 @@ export default class Datasource {
     this.templateSrv = templateSrv
   }
 
-  // ---------------------------------------------------------------------------
-
   login = () =>
     this.backendSrv
       .datasourceRequest({
@@ -61,12 +59,20 @@ export default class Datasource {
 
   // eslint-disable-next-line consistent-return
   checkToken = () => {
-    if (this.token === '' || this.token_expiry - Date.now() < 1000) {
-      const { status, message } = this.login()
-      if (status === 'error') {
-        return { status, message }
+    const _this = this
+    return this.$q(function(resolve, reject) {
+      if (_this.token === '' || _this.token_expiry - Date.now() < 1000) {
+        _this.login().then(function(result) {
+          if (result.status === 'error') {
+            reject(result)
+          } else {
+            resolve()
+          }
+        })
+      } else {
+        resolve()
       }
-    }
+    })
   }
 
   doQuery = query =>
@@ -114,10 +120,8 @@ export default class Datasource {
     }
   }
 
-  // ---------------------------------------------------------------------------
-
   query(options) {
-    this.checkToken()
+    const _this = this
     const transformResponse = response => {
       const result = response.data
       if (result.tables.length === 0) {
@@ -155,14 +159,16 @@ export default class Datasource {
       return this.$q.when({ data })
     }
 
-    return this.doQueries(queries).then(results => {
-      console.log(transformAll(results))
-      return transformAll(results)
+    return this.checkToken().then(function() {
+      return _this.doQueries(queries).then(results => {
+        console.log(transformAll(results))
+        return transformAll(results)
+      })
     })
   }
 
   annotationQuery(options) {
-    this.checkToken()
+    const _this = this
     const transformResponse = response => {
       if (!response.data.tables.length) {
         return []
@@ -192,7 +198,9 @@ export default class Datasource {
     const variables = this.getVariables(options)
     const query = this.templateSrv.replace(rawQuery, variables)
 
-    return this.doQuery(query).then(transformResponse)
+    return this.checkToken().then(function() {
+      return _this.doQuery(query).then(transformResponse)
+    })
   }
 
   metricFindQuery(query) {
