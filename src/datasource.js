@@ -126,13 +126,18 @@ export default class Datasource {
       const table = result.tables[0]
       const timestamps = table.columns[0].data
 
-      const target = table.columns[1].name
-      const datapoints = table.columns[1].data.map((value, idx) => [
-        value,
-        Date.parse(timestamps[idx])
-      ])
+      let results = []
 
-      return [{ target, datapoints }]
+      for (let i = 1; i < table.columns.length; i++) {
+        const target = table.columns[i].name
+        const datapoints = table.columns[i].data.map((value, idx) => [
+          value,
+          Date.parse(timestamps[idx])
+        ])
+        results.push({ target, datapoints })
+      }
+
+      return results
     }
 
     const transformAll = results => {
