@@ -75,23 +75,23 @@ System.register([], function (_export, _context) {
 
       Datasource = function () {
         function Datasource(instanceSettings, $q, backendSrv, templateSrv) {
-          var _this = this;
+          var _this2 = this;
 
           _classCallCheck(this, Datasource);
 
           this.login = function () {
-            return _this.backendSrv.datasourceRequest({
-              url: _this.url + '/api/login',
+            return _this2.backendSrv.datasourceRequest({
+              url: _this2.url + '/api/login',
               method: 'POST',
-              data: '{ "username": "' + _this.username + '", "secret_key": "' + _this.usersecret + '" }',
+              data: '{ "username": "' + _this2.username + '", "secret_key": "' + _this2.usersecret + '" }',
               headers: {
                 'Content-Type': 'application/json'
               }
             }).then(function (result) {
               console.log('Getting token');
               console.log(result);
-              _this.token = result.data.token;
-              _this.token_expiry = Date.now() + 10 /* hours */ * 60 /* minutes */ * 60 /* seconds */ * 1000; /* milliseconds */
+              _this2.token = result.data.token;
+              _this2.token_expiry = Date.now() + 10 /* hours */ * 60 /* minutes */ * 60 /* seconds */ * 1000; /* milliseconds */
               var status = 'success';
               var message = 'QuasarDB connection is OK!';
 
@@ -110,31 +110,36 @@ System.register([], function (_export, _context) {
           };
 
           this.checkToken = function () {
-            if (_this.token === '' || _this.token_expiry - Date.now() < 1000) {
-              var _login = _this.login(),
-                  status = _login.status,
-                  message = _login.message;
-
-              if (status === 'error') {
-                return { status: status, message: message };
+            var _this = _this2;
+            return _this2.$q(function (resolve, reject) {
+              if (_this.token === '' || _this.token_expiry - Date.now() < 1000) {
+                _this.login().then(function (result) {
+                  if (result.status === 'error') {
+                    reject(result);
+                  } else {
+                    resolve();
+                  }
+                });
+              } else {
+                resolve();
               }
-            }
+            });
           };
 
           this.doQuery = function (query) {
-            return _this.backendSrv.datasourceRequest({
-              url: _this.url + '/api/query',
+            return _this2.backendSrv.datasourceRequest({
+              url: _this2.url + '/api/query',
               method: 'POST',
               data: '{ "query" : "' + query + '" }',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: 'Bearer ' + _this.token
+                Authorization: 'Bearer ' + _this2.token
               }
             });
           };
 
           this.doQueries = function (queries) {
-            return Promise.all(queries.map(_this.doQuery));
+            return Promise.all(queries.map(_this2.doQuery));
           };
 
           this.getVariables = function (options) {
@@ -189,17 +194,15 @@ System.register([], function (_export, _context) {
           this.templateSrv = templateSrv;
         }
 
-        // ---------------------------------------------------------------------------
-
         // eslint-disable-next-line consistent-return
 
 
         _createClass(Datasource, [{
           key: 'query',
           value: function query(options) {
-            var _this2 = this;
+            var _this3 = this;
 
-            this.checkToken();
+            var _this = this;
             var transformResponse = function transformResponse(response) {
               var result = response.data;
               if (result.tables.length === 0) {
@@ -232,7 +235,7 @@ System.register([], function (_export, _context) {
             var queries = options.targets.filter(function (x) {
               return !x.hide && x.rawSql;
             }).map(function (x) {
-              return _this2.templateSrv.replace(x.rawSql, variables);
+              return _this3.templateSrv.replace(x.rawSql, variables);
             });
 
             if (!queries.length) {
@@ -240,15 +243,17 @@ System.register([], function (_export, _context) {
               return this.$q.when({ data: data });
             }
 
-            return this.doQueries(queries).then(function (results) {
-              console.log(transformAll(results));
-              return transformAll(results);
+            return this.checkToken().then(function () {
+              return _this.doQueries(queries).then(function (results) {
+                console.log(transformAll(results));
+                return transformAll(results);
+              });
             });
           }
         }, {
           key: 'annotationQuery',
           value: function annotationQuery(options) {
-            this.checkToken();
+            var _this = this;
             var transformResponse = function transformResponse(response) {
               if (!response.data.tables.length) {
                 return [];
@@ -279,7 +284,9 @@ System.register([], function (_export, _context) {
             var variables = this.getVariables(options);
             var query = this.templateSrv.replace(rawQuery, variables);
 
-            return this.doQuery(query).then(transformResponse);
+            return this.checkToken().then(function () {
+              return _this.doQuery(query).then(transformResponse);
+            });
           }
         }, {
           key: 'metricFindQuery',
