@@ -208,12 +208,17 @@ System.register([], function (_export, _context) {
               var table = result.tables[0];
               var timestamps = table.columns[0].data;
 
-              var target = table.columns[1].name;
-              var datapoints = table.columns[1].data.map(function (value, idx) {
-                return [value, Date.parse(timestamps[idx])];
-              });
+              var results = [];
 
-              return [{ target: target, datapoints: datapoints }];
+              for (var i = 1; i < table.columns.length; i++) {
+                var target = table.columns[i].name;
+                var datapoints = table.columns[i].data.map(function (value, idx) {
+                  return [value, Date.parse(timestamps[idx])];
+                });
+                results.push({ target: target, datapoints: datapoints });
+              }
+
+              return results;
             };
 
             var transformAll = function transformAll(results) {
