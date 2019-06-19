@@ -17,6 +17,35 @@ System.register([], function (_export, _context) {
     }
   }
 
+  function _asyncToGenerator(fn) {
+    return function () {
+      var gen = fn.apply(this, arguments);
+      return new Promise(function (resolve, reject) {
+        function step(key, arg) {
+          try {
+            var info = gen[key](arg);
+            var value = info.value;
+          } catch (error) {
+            reject(error);
+            return;
+          }
+
+          if (info.done) {
+            resolve(value);
+          } else {
+            return Promise.resolve(value).then(function (value) {
+              step("next", value);
+            }, function (err) {
+              step("throw", err);
+            });
+          }
+        }
+
+        return step("next");
+      });
+    };
+  }
+
   function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -79,53 +108,6 @@ System.register([], function (_export, _context) {
 
           _classCallCheck(this, Datasource);
 
-          this.login = function () {
-            return _this2.backendSrv.datasourceRequest({
-              url: _this2.url + '/api/login',
-              method: 'POST',
-              data: '{ "username": "' + _this2.username + '", "secret_key": "' + _this2.usersecret + '" }',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            }).then(function (result) {
-              console.log('Getting token');
-              console.log(result);
-              _this2.token = result.data.token;
-              _this2.token_expiry = Date.now() + 10 /* hours */ * 60 /* minutes */ * 60 /* seconds */ * 1000; /* milliseconds */
-              var status = 'success';
-              var message = 'QuasarDB connection is OK!';
-
-              return { status: status, message: message };
-            }).catch(function (err) {
-              var status = 'error';
-              var message = 'Unable to connect to datasource. ' + 'See console for detailed information.';
-
-              if ('production' !== 'test') {
-                // eslint-disable-next-line no-console
-                console.error('QDB CONNECTION ERROR:', err);
-              }
-
-              return { status: status, message: message };
-            });
-          };
-
-          this.checkToken = function () {
-            var _this = _this2;
-            return _this2.$q(function (resolve, reject) {
-              if (_this.token === '' || _this.token_expiry - Date.now() < 1000) {
-                _this.login().then(function (result) {
-                  if (result.status === 'error') {
-                    reject(result);
-                  } else {
-                    resolve();
-                  }
-                });
-              } else {
-                resolve();
-              }
-            });
-          };
-
           this.doQuery = function (query) {
             return _this2.backendSrv.datasourceRequest({
               url: _this2.url + '/api/query',
@@ -178,14 +160,15 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
+          var securityEnabled = instanceSettings.jsonData.securityEnabled;
+          var username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous';
+          var usersecret = securityEnabled ? instanceSettings.jsonData.secret : '';
+
           this.name = instanceSettings.name;
           this.id = instanceSettings.id;
-
           this.url = instanceSettings.jsonData.url;
-          this.securityEnabled = instanceSettings.jsonData.securityEnabled;
-          this.username = this.securityEnabled && instanceSettings.jsonData.name ? instanceSettings.jsonData.name : 'anonymous';
-          this.usersecret = this.securityEnabled && instanceSettings.jsonData.secret ? instanceSettings.jsonData.secret : '';
-
+          this.username = username;
+          this.usersecret = usersecret;
           this.token = '';
           this.token_expiry = Date.now();
 
@@ -194,10 +177,110 @@ System.register([], function (_export, _context) {
           this.templateSrv = templateSrv;
         }
 
-        // eslint-disable-next-line consistent-return
-
-
         _createClass(Datasource, [{
+          key: 'login',
+          value: function () {
+            var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+              var result, status, message, _status, _message;
+
+              return regeneratorRuntime.wrap(function _callee$(_context2) {
+                while (1) {
+                  switch (_context2.prev = _context2.next) {
+                    case 0:
+                      _context2.prev = 0;
+                      _context2.next = 3;
+                      return this.backendSrv.datasourceRequest({
+                        url: this.url + '/api/login',
+                        method: 'POST',
+                        data: '{ "username": "' + this.username + '", "secret_key": "' + this.usersecret + '" }',
+                        headers: {
+                          'Content-Type': 'application/json'
+                        }
+                      });
+
+                    case 3:
+                      result = _context2.sent;
+
+
+                      this.token = result.data.token;
+                      this.token_expiry = Date.now() + 10 * 60 * 60 * 1000;
+
+                      status = 'success';
+                      message = 'QuasarDB connection is OK!';
+                      return _context2.abrupt('return', { status: status, message: message });
+
+                    case 11:
+                      _context2.prev = 11;
+                      _context2.t0 = _context2['catch'](0);
+                      _status = 'error';
+                      _message = 'Unable to connect to datasource. See console for detailed information.';
+
+
+                      if ('production' !== 'dev') {
+                        console.error('QDB CONNECTION ERROR:', _context2.t0);
+                      }
+
+                      return _context2.abrupt('return', { status: _status, message: _message });
+
+                    case 17:
+                    case 'end':
+                      return _context2.stop();
+                  }
+                }
+              }, _callee, this, [[0, 11]]);
+            }));
+
+            function login() {
+              return _ref2.apply(this, arguments);
+            }
+
+            return login;
+          }()
+        }, {
+          key: 'checkToken',
+          value: function () {
+            var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+              var result;
+              return regeneratorRuntime.wrap(function _callee2$(_context3) {
+                while (1) {
+                  switch (_context3.prev = _context3.next) {
+                    case 0:
+                      if (!(this.token === '' || this.token_expiry - Date.now() < 1000)) {
+                        _context3.next = 6;
+                        break;
+                      }
+
+                      _context3.next = 3;
+                      return this.login();
+
+                    case 3:
+                      result = _context3.sent;
+
+                      if (!(result.status === 'error')) {
+                        _context3.next = 6;
+                        break;
+                      }
+
+                      throw new Error(result.message);
+
+                    case 6:
+                      return _context3.abrupt('return');
+
+                    case 7:
+                    case 'end':
+                      return _context3.stop();
+                  }
+                }
+              }, _callee2, this);
+            }));
+
+            function checkToken() {
+              return _ref3.apply(this, arguments);
+            }
+
+            return checkToken;
+          }()
+        }, {
           key: 'query',
           value: function query(options) {
             var _this3 = this;
@@ -253,46 +336,12 @@ System.register([], function (_export, _context) {
         }, {
           key: 'annotationQuery',
           value: function annotationQuery(options) {
-            var _this = this;
-            var transformResponse = function transformResponse(response) {
-              if (!response.data.tables.length) {
-                return [];
-              }
-
-              var data = response.data.tables[0];
-
-              return data.columns.map(function (column) {
-                var annotation = options.annotation;
-                var title = column.name.title;
-                var text = column.name.text;
-                var tags = [].tags;
-
-
-                var time = Date.parse(data.columns[0].data[0]);
-
-                return { annotation: annotation, time: time, title: title, text: text, tags: tags };
-              });
-            };
-
-            var rawQuery = options.annotation.query;
-
-            if (!rawQuery) {
-              var message = 'Query missing in annotation definition';
-              return this.$q.reject({ message: message });
-            }
-
-            var variables = this.getVariables(options);
-            var query = this.templateSrv.replace(rawQuery, variables);
-
-            return this.checkToken().then(function () {
-              return _this.doQuery(query).then(transformResponse);
-            });
+            throw new Error('annotations not yet implemented.');
           }
         }, {
           key: 'metricFindQuery',
           value: function metricFindQuery(query) {
-            console.log('metricFindQuery:', query);
-            throw new Error('metricFindQuery is not yet implemented.');
+            throw new Error('metrics not yet implemented.');
           }
         }, {
           key: 'testDatasource',
