@@ -1,19 +1,14 @@
 export default class Datasource {
   constructor(instanceSettings, $q, backendSrv, templateSrv) {
+    const securityEnabled = instanceSettings.jsonData.securityEnabled
+    const username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous'
+    const usersecret = securityEnabled ? instanceSettings.jsonData.secret : ''
+
     this.name = instanceSettings.name
     this.id = instanceSettings.id
-
     this.url = instanceSettings.jsonData.url
-    this.securityEnabled = instanceSettings.jsonData.securityEnabled
-    this.username =
-      this.securityEnabled && instanceSettings.jsonData.name
-        ? instanceSettings.jsonData.name
-        : 'anonymous'
-    this.usersecret =
-      this.securityEnabled && instanceSettings.jsonData.secret
-        ? instanceSettings.jsonData.secret
-        : ''
-
+    this.username = username
+    this.usersecret = usersecret
     this.token = ''
     this.token_expiry = Date.now()
 
@@ -22,9 +17,9 @@ export default class Datasource {
     this.templateSrv = templateSrv
   }
 
-  login = () =>
-    this.backendSrv
-      .datasourceRequest({
+  async login() {
+    try {
+      const result = await this.backendSrv.datasourceRequest({
         url: `${this.url}/api/login`,
         method: 'POST',
         data: `{ "username": "${this.username}", "secret_key": "${this.usersecret}" }`,
@@ -32,47 +27,35 @@ export default class Datasource {
           'Content-Type': 'application/json'
         }
       })
-      .then(result => {
-        console.log('Getting token')
-        console.log(result)
-        this.token = result.data.token
-        this.token_expiry =
-          Date.now() +
-          10 /* hours */ * 60 /* minutes */ * 60 /* seconds */ * 1000 /* milliseconds */
-        const status = 'success'
-        const message = 'QuasarDB connection is OK!'
 
-        return { status, message }
-      })
-      .catch(err => {
-        const status = 'error'
-        const message =
-          'Unable to connect to datasource. ' + 'See console for detailed information.'
+      this.token = result.data.token
+      this.token_expiry = Date.now() + 10 * 60 * 60 * 1000
 
-        if (process.env.NODE_ENV !== 'test') {
-          // eslint-disable-next-line no-console
-          console.error('QDB CONNECTION ERROR:', err)
-        }
+      const status = 'success'
+      const message = 'QuasarDB connection is OK!'
+      return { status, message }
+    } catch (err) {
+      const status = 'error'
+      const message = 'Unable to connect to datasource. See console for detailed information.'
 
-        return { status, message }
-      })
-
-  // eslint-disable-next-line consistent-return
-  checkToken = () => {
-    const _this = this
-    return this.$q(function(resolve, reject) {
-      if (_this.token === '' || _this.token_expiry - Date.now() < 1000) {
-        _this.login().then(function(result) {
-          if (result.status === 'error') {
-            reject(result)
-          } else {
-            resolve()
-          }
-        })
-      } else {
-        resolve()
+      if (process.env.NODE_ENV !== 'dev') {
+        console.error('QDB CONNECTION ERROR:', err)
       }
-    })
+
+      return { status, message }
+    }
+  }
+
+  async checkToken() {
+    if (this.token === '' || this.token_expiry - Date.now() < 1000) {
+      const result = await this.login()
+
+      if (result.status === 'error') {
+        throw new Error(result.message)
+      }
+    }
+
+    return
   }
 
   doQuery = query =>
@@ -168,44 +151,11 @@ export default class Datasource {
   }
 
   annotationQuery(options) {
-    const _this = this
-    const transformResponse = response => {
-      if (!response.data.tables.length) {
-        return []
-      }
-
-      const data = response.data.tables[0]
-
-      return data.columns.map(column => {
-        const { annotation } = options
-        const { title } = column.name
-        const { text } = column.name
-        const { tags } = []
-
-        const time = Date.parse(data.columns[0].data[0])
-
-        return { annotation, time, title, text, tags }
-      })
-    }
-
-    const rawQuery = options.annotation.query
-
-    if (!rawQuery) {
-      const message = 'Query missing in annotation definition'
-      return this.$q.reject({ message })
-    }
-
-    const variables = this.getVariables(options)
-    const query = this.templateSrv.replace(rawQuery, variables)
-
-    return this.checkToken().then(function() {
-      return _this.doQuery(query).then(transformResponse)
-    })
+    throw new Error('annotations not yet implemented.')
   }
 
   metricFindQuery(query) {
-    console.log('metricFindQuery:', query)
-    throw new Error('metricFindQuery is not yet implemented.')
+    throw new Error('metrics not yet implemented.')
   }
 
   testDatasource() {
