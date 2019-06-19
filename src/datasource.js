@@ -6,7 +6,7 @@ export default class Datasource {
 
     this.name = instanceSettings.name
     this.id = instanceSettings.id
-    this.url = instanceSettings.jsonData.url
+    this.url = instanceSettings.url
     this.username = username
     this.usersecret = usersecret
     this.token = ''
