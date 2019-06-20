@@ -28,9 +28,10 @@
   },
   "scripts": {
     "start": "npm run build:rm && concurrently \"npm run build:cp --watch\" \"npm run build:js --watch\"",
-    "build": "npm run build:rm && concurrently \"npm run build:cp\" \"npm run build:js\"",
+    "build": "npm run build:rm && concurrently \"npm run build:cp\" \"npm run build:readme\" \"npm run build:js\"",
     "build:rm": "rimraf ./dist && mkdir dist ",
     "build:cp": "cpx -v \"./src/{img/**/*,partials/**/*,plugin.json}\" ./dist",
+    "build:readme": "cpx -v \"README.md\" ./dist",
     "build:js": "cross-env NODE_ENV=production BABEL_ENV=production babel ./src -d ./dist --source-maps",
     "lint": "eslint . --cache",
     "test": "cross-env NODE_ENV=test BABEL_ENV=test mocha --require babel-core/register ./test"
