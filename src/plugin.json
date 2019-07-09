@@ -2,10 +2,8 @@
   "type": "datasource",
   "name": "QuasarDB",
   "id": "qdb-grafana-datasource",
-
-  "metrics": false,
-  "annotations": false,
-
+  "metrics": true,
+  "annotations": true,
   "info": {
     "version": "3.4.0",
     "description": "QuasarDB datasource for Grafana",
@@ -18,7 +16,6 @@
       "large": "img/logo_quasardb.png"
     }
   },
-
   "dependencies": {
     "grafanaVersion": "5.x.x",
     "plugins": []
