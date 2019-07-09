@@ -118,7 +118,6 @@ System.register([], function (_export, _context) {
             var query = _ref.query,
                 format = _ref.format;
 
-            console.log(format);
             return _this.backendSrv.datasourceRequest({
               url: _this.url + '/api/query',
               method: 'POST',
@@ -182,7 +181,6 @@ System.register([], function (_export, _context) {
             switch (response.data.format) {
               case 'table':
                 {
-                  console.log('format as table');
                   var table = result.tables[0];
                   var timestamps = table.columns[0].data;
                   var colCount = table.columns.length;
@@ -217,7 +215,6 @@ System.register([], function (_export, _context) {
               default:
                 {
                   var _ret = function () {
-                    console.log('format as series');
                     var table = result.tables[0];
                     var timestamps = table.columns[0].data;
 
@@ -411,13 +408,9 @@ System.register([], function (_export, _context) {
 
                     case 11:
                       transformedResults = _context4.sent;
-
-
-                      console.log(transformedResults);
-
                       return _context4.abrupt('return', transformedResults);
 
-                    case 14:
+                    case 13:
                     case 'end':
                       return _context4.stop();
                   }
