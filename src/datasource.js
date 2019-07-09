@@ -58,8 +58,8 @@ export default class Datasource {
     return
   }
 
-  doQuery = query =>
-    this.backendSrv.datasourceRequest({
+  doQuery = ({ query, format }) => {
+    return this.backendSrv.datasourceRequest({
       url: `${this.url}/api/query`,
       method: 'POST',
       data: `{ "query" : "${query}" }`,
@@ -67,7 +67,11 @@ export default class Datasource {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${this.token}`
       }
+    }).then(result => {
+      result.data.format = format
+      return result
     })
+  }
 
   doQueries = queries => Promise.all(queries.map(this.doQuery))
 
@@ -103,51 +107,90 @@ export default class Datasource {
     }
   }
 
-  query(options) {
-    const _this = this
-    const transformResponse = response => {
-      const result = response.data
-      if (result.tables.length === 0) {
-        return []
-      }
-      const table = result.tables[0]
-      const timestamps = table.columns[0].data
-
-      let results = []
-
-      for (let i = 1; i < table.columns.length; i++) {
-        const target = table.columns[i].name
-        const datapoints = table.columns[i].data.map((value, idx) => [
-          value,
-          Date.parse(timestamps[idx])
-        ])
-        results.push({ target, datapoints })
-      }
-
-      return results
+  transformResponse = response => {
+    const result = response.data
+    if (result.tables.length === 0) {
+      return []
     }
 
-    const transformAll = results => {
-      const data = results.map(transformResponse).reduce((a, b) => [...a, ...b], [])
-      return { data }
-    }
+    switch (response.data.format) {
+      case 'table': {
+        const table = result.tables[0]
+        const timestamps = table.columns[0].data
+        const colCount = table.columns.length
+        const rowCount = table.columns[0].data.length
+        const columns = table.columns.map((c, i) => {
+          let result = { text: c.name }
+          if (i === 0) {
+            result.type = 'time'
+          }
+          return result
+        })
+        let rows = []
+        for (let i = 0; i < rowCount; i++) {
+          let row = []
+          for (let j = 0; j < colCount; j++) {
 
+            if (j == 0) {
+              row.push(Date.parse(table.columns[j].data[i]))
+            } else {
+              row.push(table.columns[j].data[i])
+            }
+          }
+          rows.push(row)
+        }
+
+        return [{
+          columns,
+          rows,
+          type: 'table'
+        }]
+      }
+      default: {
+        const table = result.tables[0]
+        const timestamps = table.columns[0].data
+
+        let results = []
+
+        for (let i = 1; i < table.columns.length; i++) {
+          const target = table.columns[i].name
+          const datapoints = table.columns[i].data.map((value, idx) => [
+            value,
+            Date.parse(timestamps[idx])
+          ])
+          results.push({ target, datapoints })
+        }
+
+        return results
+      }
+    }
+  }
+
+  transformAll = results => {
+    const data = results.map(this.transformResponse).reduce((a, b) => [...a, ...b], [])
+    return { data }
+  }
+
+  async query(options) {
     const variables = this.getVariables(options)
+
     const queries = options.targets
-      .filter(x => !x.hide && x.rawSql)
-      .map(x => this.templateSrv.replace(x.rawSql, variables))
+      .filter(t => !t.hide && t.rawSql)
+      .map(t => {
+        return {
+          format: t.resultFormat,
+          query: this.templateSrv.replace(t.rawSql, variables)
+        }
+      })
 
     if (!queries.length) {
-      const data = []
-      return this.$q.when({ data })
+      return { data: [] }
     }
 
-    return this.checkToken().then(function() {
-      return _this.doQueries(queries).then(results => {
-        console.log(transformAll(results))
-        return transformAll(results)
-      })
-    })
+    await this.checkToken()
+    const results = await this.doQueries(queries)
+    const transformedResults = await this.transformAll(results)
+    return transformedResults
   }
 
   annotationQuery(options) {

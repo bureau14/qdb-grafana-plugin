@@ -48,7 +48,10 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
 
           var _this = _possibleConstructorReturn(this, (QueryCtrl.__proto__ || Object.getPrototypeOf(QueryCtrl)).call(this, $scope, $injector));
 
+          // this.target = this.target
           _this.target.rawSql = _this.target.rawSql || QueryCtrl.defaultQuery;
+          _this.target.resultFormat = _this.target.resultFormat || 'time_series';
+          _this.resultFormats = [{ text: 'Time series', value: 'time_series' }, { text: 'Table', value: 'table' }];
           return _this;
         }
 

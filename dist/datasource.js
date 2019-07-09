@@ -3,19 +3,7 @@
 System.register([], function (_export, _context) {
   "use strict";
 
-  var _extends, _createClass, Datasource;
-
-  function _toConsumableArray(arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
-        arr2[i] = arr[i];
-      }
-
-      return arr2;
-    } else {
-      return Array.from(arr);
-    }
-  }
+  var _typeof, _extends, _createClass, Datasource;
 
   function _asyncToGenerator(fn) {
     return function () {
@@ -46,6 +34,18 @@ System.register([], function (_export, _context) {
     };
   }
 
+  function _toConsumableArray(arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+        arr2[i] = arr[i];
+      }
+
+      return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  }
+
   function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -70,6 +70,12 @@ System.register([], function (_export, _context) {
   return {
     setters: [],
     execute: function () {
+      _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+        return typeof obj;
+      } : function (obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
+
       _extends = Object.assign || function (target) {
         for (var i = 1; i < arguments.length; i++) {
           var source = arguments[i];
@@ -104,24 +110,31 @@ System.register([], function (_export, _context) {
 
       Datasource = function () {
         function Datasource(instanceSettings, $q, backendSrv, templateSrv) {
-          var _this2 = this;
+          var _this = this;
 
           _classCallCheck(this, Datasource);
 
-          this.doQuery = function (query) {
-            return _this2.backendSrv.datasourceRequest({
-              url: _this2.url + '/api/query',
+          this.doQuery = function (_ref) {
+            var query = _ref.query,
+                format = _ref.format;
+
+            console.log(format);
+            return _this.backendSrv.datasourceRequest({
+              url: _this.url + '/api/query',
               method: 'POST',
               data: '{ "query" : "' + query + '" }',
               headers: {
                 'Content-Type': 'application/json',
-                Authorization: 'Bearer ' + _this2.token
+                Authorization: 'Bearer ' + _this.token
               }
+            }).then(function (result) {
+              result.data.format = format;
+              return result;
             });
           };
 
           this.doQueries = function (queries) {
-            return Promise.all(queries.map(_this2.doQuery));
+            return Promise.all(queries.map(_this.doQuery));
           };
 
           this.getVariables = function (options) {
@@ -160,6 +173,81 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
+          this.transformResponse = function (response) {
+            var result = response.data;
+            if (result.tables.length === 0) {
+              return [];
+            }
+
+            switch (response.data.format) {
+              case 'table':
+                {
+                  console.log('format as table');
+                  var table = result.tables[0];
+                  var timestamps = table.columns[0].data;
+                  var colCount = table.columns.length;
+                  var rowCount = table.columns[0].data.length;
+                  var columns = table.columns.map(function (c, i) {
+                    var result = { text: c.name };
+                    if (i === 0) {
+                      result.type = 'time';
+                    }
+                    return result;
+                  });
+                  var rows = [];
+                  for (var i = 0; i < rowCount; i++) {
+                    var row = [];
+                    for (var j = 0; j < colCount; j++) {
+
+                      if (j == 0) {
+                        row.push(Date.parse(table.columns[j].data[i]));
+                      } else {
+                        row.push(table.columns[j].data[i]);
+                      }
+                    }
+                    rows.push(row);
+                  }
+
+                  return [{
+                    columns: columns,
+                    rows: rows,
+                    type: 'table'
+                  }];
+                }
+              default:
+                {
+                  var _ret = function () {
+                    console.log('format as series');
+                    var table = result.tables[0];
+                    var timestamps = table.columns[0].data;
+
+                    var results = [];
+
+                    for (var _i = 1; _i < table.columns.length; _i++) {
+                      var target = table.columns[_i].name;
+                      var datapoints = table.columns[_i].data.map(function (value, idx) {
+                        return [value, Date.parse(timestamps[idx])];
+                      });
+                      results.push({ target: target, datapoints: datapoints });
+                    }
+
+                    return {
+                      v: results
+                    };
+                  }();
+
+                  if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+                }
+            }
+          };
+
+          this.transformAll = function (results) {
+            var data = results.map(_this.transformResponse).reduce(function (a, b) {
+              return [].concat(_toConsumableArray(a), _toConsumableArray(b));
+            }, []);
+            return { data: data };
+          };
+
           var securityEnabled = instanceSettings.jsonData.securityEnabled;
           var username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous';
           var usersecret = securityEnabled ? instanceSettings.jsonData.secret : '';
@@ -180,7 +268,7 @@ System.register([], function (_export, _context) {
         _createClass(Datasource, [{
           key: 'login',
           value: function () {
-            var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+            var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
               var result, status, message, _status, _message;
 
               return regeneratorRuntime.wrap(function _callee$(_context2) {
@@ -231,7 +319,7 @@ System.register([], function (_export, _context) {
             }));
 
             function login() {
-              return _ref2.apply(this, arguments);
+              return _ref3.apply(this, arguments);
             }
 
             return login;
@@ -239,7 +327,7 @@ System.register([], function (_export, _context) {
         }, {
           key: 'checkToken',
           value: function () {
-            var _ref3 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+            var _ref4 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
               var result;
               return regeneratorRuntime.wrap(function _callee2$(_context3) {
                 while (1) {
@@ -275,64 +363,74 @@ System.register([], function (_export, _context) {
             }));
 
             function checkToken() {
-              return _ref3.apply(this, arguments);
+              return _ref4.apply(this, arguments);
             }
 
             return checkToken;
           }()
         }, {
           key: 'query',
-          value: function query(options) {
-            var _this3 = this;
+          value: function () {
+            var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(options) {
+              var _this2 = this;
 
-            var _this = this;
-            var transformResponse = function transformResponse(response) {
-              var result = response.data;
-              if (result.tables.length === 0) {
-                return [];
-              }
-              var table = result.tables[0];
-              var timestamps = table.columns[0].data;
+              var variables, queries, results, transformedResults;
+              return regeneratorRuntime.wrap(function _callee3$(_context4) {
+                while (1) {
+                  switch (_context4.prev = _context4.next) {
+                    case 0:
+                      variables = this.getVariables(options);
+                      queries = options.targets.filter(function (t) {
+                        return !t.hide && t.rawSql;
+                      }).map(function (t) {
+                        return {
+                          format: t.resultFormat,
+                          query: _this2.templateSrv.replace(t.rawSql, variables)
+                        };
+                      });
 
-              var results = [];
+                      if (queries.length) {
+                        _context4.next = 4;
+                        break;
+                      }
 
-              for (var i = 1; i < table.columns.length; i++) {
-                var target = table.columns[i].name;
-                var datapoints = table.columns[i].data.map(function (value, idx) {
-                  return [value, Date.parse(timestamps[idx])];
-                });
-                results.push({ target: target, datapoints: datapoints });
-              }
+                      return _context4.abrupt('return', { data: [] });
 
-              return results;
-            };
+                    case 4:
+                      _context4.next = 6;
+                      return this.checkToken();
 
-            var transformAll = function transformAll(results) {
-              var data = results.map(transformResponse).reduce(function (a, b) {
-                return [].concat(_toConsumableArray(a), _toConsumableArray(b));
-              }, []);
-              return { data: data };
-            };
+                    case 6:
+                      _context4.next = 8;
+                      return this.doQueries(queries);
 
-            var variables = this.getVariables(options);
-            var queries = options.targets.filter(function (x) {
-              return !x.hide && x.rawSql;
-            }).map(function (x) {
-              return _this3.templateSrv.replace(x.rawSql, variables);
-            });
+                    case 8:
+                      results = _context4.sent;
+                      _context4.next = 11;
+                      return this.transformAll(results);
 
-            if (!queries.length) {
-              var data = [];
-              return this.$q.when({ data: data });
+                    case 11:
+                      transformedResults = _context4.sent;
+
+
+                      console.log(transformedResults);
+
+                      return _context4.abrupt('return', transformedResults);
+
+                    case 14:
+                    case 'end':
+                      return _context4.stop();
+                  }
+                }
+              }, _callee3, this);
+            }));
+
+            function query(_x) {
+              return _ref5.apply(this, arguments);
             }
 
-            return this.checkToken().then(function () {
-              return _this.doQueries(queries).then(function (results) {
-                console.log(transformAll(results));
-                return transformAll(results);
-              });
-            });
-          }
+            return query;
+          }()
         }, {
           key: 'annotationQuery',
           value: function annotationQuery(options) {
