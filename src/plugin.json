@@ -3,7 +3,7 @@
   "name": "QuasarDB",
   "id": "qdb-grafana-datasource",
   "metrics": true,
-  "annotations": true,
+  "annotations": false,
   "info": {
     "version": "3.4.0",
     "description": "QuasarDB datasource for Grafana",
