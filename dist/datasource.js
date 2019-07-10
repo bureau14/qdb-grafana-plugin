@@ -196,9 +196,14 @@ System.register([], function (_export, _context) {
                   for (var i = 0; i < rowCount; i++) {
                     var row = [];
                     for (var j = 0; j < colCount; j++) {
+                      var value = table.columns[j].data[i];
 
                       if (j == 0) {
-                        row.push(Date.parse(table.columns[j].data[i]));
+                        row.push(Date.parse(value));
+                      } else if (typeof value == 'string') {
+                        // TODO(mike): remove base64 string handling when rest api is updated
+                        // unencode base64 string
+                        row.push(atob(value));
                       } else {
                         row.push(table.columns[j].data[i]);
                       }
