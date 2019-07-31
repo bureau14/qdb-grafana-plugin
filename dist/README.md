@@ -15,7 +15,7 @@ This documentation assumes you have:
 * Grafana [installed](https://grafana.com/docs/) and running.
 * Both the QuasarDB daemon `qdbd` and the REST API `qdb_rest` running.
 
-5.14.3. Installation
+## Installation
 The easiest way to install the plugin is via the Grafana CLI
 
 ```
@@ -60,15 +60,6 @@ After you are done, click Save & Test and you are ready to starting creating vis
 ## Usage
 
 You can add a visualization using QuasarDB by selecting the QuasarDB Data Source when creating a new visualization.
-
-```
-Note:
-Which result format you need will be specified by the visualization you are using, but Time series is a most common format.
-```
-
-When defining a query for your visualization you should specify whether you was like to format the result as either `Time series` or a `Table` by selecting an option from the `FORMAT AS` dropdown in the query editor as shown below:
-
-![Query Editor Format As](https://doc.quasardb.net/master/_images/qdb_grafana_query.png)
 
 In additional to normal query syntax you can the `$__range` and `$__interval` variables provided by Grafana.
 
