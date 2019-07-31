@@ -1,12 +1,12 @@
 {
   "type": "datasource",
   "name": "QuasarDB",
-  "id": "qdb-grafana-datasource",
+  "id": "quasardb-datasource",
   "metrics": true,
   "annotations": false,
   "info": {
-    "version": "3.4.0",
-    "description": "QuasarDB datasource for Grafana",
+    "version": "3.5.0",
+    "description": "Data source for QuasarDB, the high performance timeseries database for the most demanding use cases",
     "author": {
       "name": "QuasarDB",
       "url": "https://quasardb.net"
