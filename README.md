@@ -70,7 +70,7 @@ When defining a query for your visualization you should specify whether you was 
 
 ![Query Editor Format As](https://doc.quasardb.net/master/_images/qdb_grafana_query.png)
 
-In additional to normal query syntax you can the `$__range` and `$__interval` variables provided by Grafana.
+In additional to normal query syntax you can use the `$__range` and `$__interval` variables provided by Grafana.
 
 For example the query:
 

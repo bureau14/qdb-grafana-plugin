@@ -15,7 +15,7 @@ This documentation assumes you have:
 * Grafana [installed](https://grafana.com/docs/) and running.
 * Both the QuasarDB daemon `qdbd` and the REST API `qdb_rest` running.
 
-5.14.3. Installation
+## Installation
 The easiest way to install the plugin is via the Grafana CLI
 
 ```
@@ -70,7 +70,7 @@ When defining a query for your visualization you should specify whether you was 
 
 ![Query Editor Format As](https://doc.quasardb.net/master/_images/qdb_grafana_query.png)
 
-In additional to normal query syntax you can the `$__range` and `$__interval` variables provided by Grafana.
+In additional to normal query syntax you can use the `$__range` and `$__interval` variables provided by Grafana.
 
 For example the query:
 
