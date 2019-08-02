@@ -61,7 +61,7 @@ After you are done, click Save & Test and you are ready to starting creating vis
 
 You can add a visualization using QuasarDB by selecting the QuasarDB Data Source when creating a new visualization.
 
-In additional to normal query syntax you can the `$__range` and `$__interval` variables provided by Grafana.
+In additional to normal query syntax you can use the `$__range` and `$__interval` variables provided by Grafana.
 
 For example the query:
 

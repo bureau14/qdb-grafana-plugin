@@ -12,8 +12,8 @@
       "url": "https://quasardb.net"
     },
     "logos": {
-      "small": "img/logo_quasardb.png",
-      "large": "img/logo_quasardb.png"
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
     }
   },
   "dependencies": {
