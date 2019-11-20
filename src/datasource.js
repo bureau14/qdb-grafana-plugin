@@ -135,8 +135,6 @@ export default class Datasource {
             if (j == 0) {
               row.push(Date.parse(value))
             } else if (typeof value == 'string') {
-              // TODO(mike): remove base64 string handling when rest api is updated
-              // unencode base64 string
               row.push(atob(value))
             } else {
               row.push(table.columns[j].data[i])

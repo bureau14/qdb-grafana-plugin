@@ -1,9 +1,9 @@
 {
   "name": "qdb-grafana-datasource",
-  "version": "1.0.0",
+  "version": "3.5.0",
   "description": "QuasarDB datasource for Grafana",
   "main": "src/module.js",
-  "author": "Remi de Groot <rdg94@live.nl>",
+  "author": "Mike Jackson <mike@quasardb.net>",
   "license": "ISC",
   "devDependencies": {
     "babel-cli": "^6.26.0",

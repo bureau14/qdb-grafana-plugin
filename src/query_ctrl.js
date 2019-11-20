@@ -2,7 +2,7 @@ import { QueryCtrl as GrafanaQueryCtrl } from 'app/plugins/sdk'
 
 export default class QueryCtrl extends GrafanaQueryCtrl {
   static templateUrl = 'partials/query.editor.html'
-  static defaultQuery = "select min(open) from 'stocks.goldman_sachs' in $__range group by $__interval"
+  static defaultQuery = "select avg(low), max(high) from fx.btcusd in $__range group by $__interval"
 
   constructor($scope, $injector) {
     super($scope, $injector)

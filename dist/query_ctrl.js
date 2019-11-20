@@ -59,7 +59,7 @@ System.register(['app/plugins/sdk'], function (_export, _context) {
       }(GrafanaQueryCtrl);
 
       QueryCtrl.templateUrl = 'partials/query.editor.html';
-      QueryCtrl.defaultQuery = "select min(open) from 'stocks.goldman_sachs' in $__range group by $__interval";
+      QueryCtrl.defaultQuery = "select avg(low), max(high) from fx.btcusd in $__range group by $__interval";
 
       _export('default', QueryCtrl);
     }
