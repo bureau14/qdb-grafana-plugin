@@ -24,7 +24,8 @@
     "mocha": "^5.1.1",
     "prettier": "^1.18.2",
     "q": "^1.5.1",
-    "rimraf": "^2.6.2"
+    "rimraf": "^2.6.2",
+    "regenerator-runtime": "^0.13.0"
   },
   "scripts": {
     "start": "npm run build:rm && concurrently \"npm run build:cp --watch\" \"npm run build:js --watch\"",
