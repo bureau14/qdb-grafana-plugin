@@ -3,6 +3,8 @@ export default class Datasource {
     const securityEnabled = instanceSettings.jsonData.securityEnabled
     const username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous'
     const usersecret = securityEnabled ? instanceSettings.jsonData.secret : ''
+    const maxDurationYear = Date.parse('1971-01-01')
+    const epochYear  = Date.parse('1970-01-01')
 
     this.name = instanceSettings.name
     this.id = instanceSettings.id
@@ -15,6 +17,9 @@ export default class Datasource {
     this.$q = $q
     this.backendSrv = backendSrv
     this.templateSrv = templateSrv
+    
+    this.maxDurationYear = maxDurationYear
+    this.epochYear = epochYear
   }
 
   async login() {
@@ -107,6 +112,15 @@ export default class Datasource {
     }
   }
 
+  transformDate = value => {
+    let d = Date.parse(value)
+    // handle timestamp as duration
+    if (d < this.maxDurationYear) {
+      return d - this.epochYear
+    }
+    return d
+  }
+
   transformValue = value => {
     if (typeof value == 'string') {
       try {
@@ -145,7 +159,7 @@ export default class Datasource {
             const value = table.columns[j].data[i]
 
             if (j == 0) {
-              row.push(Date.parse(value))
+              row.push(this.transformDate(value))
             } else {
               row.push(transformValue(value))
             }
@@ -169,7 +183,7 @@ export default class Datasource {
           const target = table.columns[i].name
           const datapoints = table.columns[i].data.map((value, idx) => [
             value,
-            Date.parse(timestamps[idx])
+            row.push(this.transformDate(value))
           ])
           results.push({ target, datapoints })
         }

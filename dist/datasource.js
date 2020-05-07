@@ -3,7 +3,7 @@
 System.register([], function (_export, _context) {
   "use strict";
 
-  var _typeof, _extends, _createClass, Datasource;
+  var _extends, _createClass, Datasource;
 
   function _asyncToGenerator(fn) {
     return function () {
@@ -70,12 +70,6 @@ System.register([], function (_export, _context) {
   return {
     setters: [],
     execute: function () {
-      _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-        return typeof obj;
-      } : function (obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-      };
-
       _extends = Object.assign || function (target) {
         for (var i = 1; i < arguments.length; i++) {
           var source = arguments[i];
@@ -172,6 +166,15 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
+          this.transformDate = function (value) {
+            var d = Date.parse(value);
+            // handle timestamp as duration
+            if (d < _this.maxDurationYear) {
+              return d - _this.epochYear;
+            }
+            return d;
+          };
+
           this.transformValue = function (value) {
             if (typeof value == 'string') {
               try {
@@ -206,17 +209,17 @@ System.register([], function (_export, _context) {
                   });
                   var rows = [];
                   for (var i = 0; i < rowCount; i++) {
-                    var row = [];
+                    var _row = [];
                     for (var j = 0; j < colCount; j++) {
                       var value = table.columns[j].data[i];
 
                       if (j == 0) {
-                        row.push(Date.parse(value));
+                        _row.push(_this.transformDate(value));
                       } else {
-                        row.push(transformValue(value));
+                        _row.push(transformValue(value));
                       }
                     }
-                    rows.push(row);
+                    rows.push(_row);
                   }
 
                   return [{
@@ -227,26 +230,20 @@ System.register([], function (_export, _context) {
                 }
               default:
                 {
-                  var _ret = function () {
-                    var table = result.tables[0];
-                    var timestamps = table.columns[0].data;
+                  var _table = result.tables[0];
+                  var _timestamps = _table.columns[0].data;
 
-                    var results = [];
+                  var results = [];
 
-                    for (var _i = 1; _i < table.columns.length; _i++) {
-                      var target = table.columns[_i].name;
-                      var datapoints = table.columns[_i].data.map(function (value, idx) {
-                        return [value, Date.parse(timestamps[idx])];
-                      });
-                      results.push({ target: target, datapoints: datapoints });
-                    }
+                  for (var _i = 1; _i < _table.columns.length; _i++) {
+                    var target = _table.columns[_i].name;
+                    var datapoints = _table.columns[_i].data.map(function (value, idx) {
+                      return [value, row.push(_this.transformDate(value))];
+                    });
+                    results.push({ target: target, datapoints: datapoints });
+                  }
 
-                    return {
-                      v: results
-                    };
-                  }();
-
-                  if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+                  return results;
                 }
             }
           };
@@ -261,6 +258,8 @@ System.register([], function (_export, _context) {
           var securityEnabled = instanceSettings.jsonData.securityEnabled;
           var username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous';
           var usersecret = securityEnabled ? instanceSettings.jsonData.secret : '';
+          var maxDurationYear = Date.parse('1971-01-01');
+          var epochYear = Date.parse('1970-01-01');
 
           this.name = instanceSettings.name;
           this.id = instanceSettings.id;
@@ -273,6 +272,9 @@ System.register([], function (_export, _context) {
           this.$q = $q;
           this.backendSrv = backendSrv;
           this.templateSrv = templateSrv;
+
+          this.maxDurationYear = maxDurationYear;
+          this.epochYear = epochYear;
         }
 
         _createClass(Datasource, [{
