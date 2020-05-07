@@ -121,14 +121,10 @@ export default class Datasource {
   transformValue = value => {
     if (typeof value == 'string') {
       try {
-        return this.transformDate(value)
+        let v = window.atob(value)
+        return v
       } catch (error) {
-        try {
-          let v = atob(value)
-          return v
-        } catch (error) {
-          return value
-        }
+        return value
       }
     }
     return value
@@ -183,7 +179,7 @@ export default class Datasource {
         for (let i = 1; i < table.columns.length; i++) {
           const target = table.columns[i].name
           const datapoints = table.columns[i].data.map((value, idx) => [
-            this.transformValue(value),
+            value,
             this.transformDate(timestamps[idx])
           ])
           results.push({ target, datapoints })
