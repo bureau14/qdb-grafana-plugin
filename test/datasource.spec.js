@@ -1,5 +1,6 @@
 import Q from 'q'
 import { expect } from 'chai'
+import { regeneratorRuntime } from 'regenerator-runtime';
 
 import Datasource from '../src/datasource'
 
