@@ -184,14 +184,10 @@ System.register([], function (_export, _context) {
           this.transformValue = function (value) {
             if (typeof value == 'string') {
               try {
-                return _this.transformDate(value);
+                var v = window.atob(value);
+                return v;
               } catch (error) {
-                try {
-                  var v = atob(value);
-                  return v;
-                } catch (error) {
-                  return value;
-                }
+                return value;
               }
             }
             return value;
@@ -248,7 +244,7 @@ System.register([], function (_export, _context) {
                     for (var _i = 1; _i < table.columns.length; _i++) {
                       var target = table.columns[_i].name;
                       var datapoints = table.columns[_i].data.map(function (value, idx) {
-                        return [_this.transformValue(value), _this.transformDate(timestamps[idx])];
+                        return [value, _this.transformDate(timestamps[idx])];
                       });
                       results.push({ target: target, datapoints: datapoints });
                     }
