@@ -97,22 +97,6 @@ describe('Datasource', function() {
     return d
   }
 
-  const transformValue = value => {
-    if (typeof value == 'string') {
-      try {
-        return this.transformDate(value)
-      } catch (error) {
-        try {
-          let v = atob(value)
-          return v
-        } catch (error) {
-          return value
-        }
-      }
-    }
-    return value
-  }
-
     const transformResponse = response => {
       const result = response.data
       if (result.tables.length === 0) {
@@ -126,7 +110,7 @@ describe('Datasource', function() {
       for (let i = 1; i < table.columns.length; i++) {
         const target = table.columns[i].name
         const datapoints = table.columns[i].data.map((value, idx) => [
-          transformValue(value),
+          value,
           transformDate(timestamps[idx])
         ])
         results.push({ target, datapoints })
