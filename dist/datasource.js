@@ -172,6 +172,18 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
+          this.transformValue = function (value) {
+            if (typeof value == 'string') {
+              try {
+                var v = window.atob(value);
+                return v;
+              } catch (error) {
+                return value;
+              }
+            }
+            return value;
+          };
+
           this.transformResponse = function (response) {
             var result = response.data;
             if (result.tables.length === 0) {
@@ -200,10 +212,8 @@ System.register([], function (_export, _context) {
 
                       if (j == 0) {
                         row.push(Date.parse(value));
-                      } else if (typeof value == 'string') {
-                        row.push(atob(value));
                       } else {
-                        row.push(table.columns[j].data[i]);
+                        row.push(transformValue(value));
                       }
                     }
                     rows.push(row);

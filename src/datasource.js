@@ -107,6 +107,18 @@ export default class Datasource {
     }
   }
 
+  transformValue = value => {
+    if (typeof value == 'string') {
+      try {
+        let v = window.atob(value)
+        return v
+      } catch (error) {
+        return value
+      }
+    }
+    return value
+  }
+
   transformResponse = response => {
     const result = response.data
     if (result.tables.length === 0) {
@@ -134,10 +146,8 @@ export default class Datasource {
 
             if (j == 0) {
               row.push(Date.parse(value))
-            } else if (typeof value == 'string') {
-              row.push(atob(value))
             } else {
-              row.push(table.columns[j].data[i])
+              row.push(transformValue(value))
             }
           }
           rows.push(row)
