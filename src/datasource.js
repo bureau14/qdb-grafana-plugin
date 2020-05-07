@@ -4,6 +4,7 @@ export default class Datasource {
     const username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous'
     const usersecret = securityEnabled ? instanceSettings.jsonData.secret : ''
     const maxDurationYear = Date.parse('1971-01-01')
+    const epochYear  = Date.parse('1970-01-01')
 
     this.name = instanceSettings.name
     this.id = instanceSettings.id
@@ -17,6 +18,7 @@ export default class Datasource {
     this.backendSrv = backendSrv
     this.templateSrv = templateSrv
     this.maxDurationYear = maxDurationYear
+    this.epochYear = epochYear
   }
 
   async login() {
@@ -113,7 +115,7 @@ export default class Datasource {
     let d = Date.parse(value)
     // handle timestamp as duration
     if (d < this.maxDurationYear) {
-      return this.maxDurationYear - d
+      return d - this.epochYear
     }
     return d
   }

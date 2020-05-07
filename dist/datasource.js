@@ -176,7 +176,7 @@ System.register([], function (_export, _context) {
             var d = Date.parse(value);
             // handle timestamp as duration
             if (d < _this.maxDurationYear) {
-              return _this.maxDurationYear - d;
+              return d - _this.epochYear;
             }
             return d;
           };
@@ -270,6 +270,7 @@ System.register([], function (_export, _context) {
           var username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous';
           var usersecret = securityEnabled ? instanceSettings.jsonData.secret : '';
           var maxDurationYear = Date.parse('1971-01-01');
+          var epochYear = Date.parse('1970-01-01');
 
           this.name = instanceSettings.name;
           this.id = instanceSettings.id;
@@ -283,6 +284,7 @@ System.register([], function (_export, _context) {
           this.backendSrv = backendSrv;
           this.templateSrv = templateSrv;
           this.maxDurationYear = maxDurationYear;
+          this.epochYear = epochYear;
         }
 
         _createClass(Datasource, [{
