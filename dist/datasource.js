@@ -172,11 +172,19 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
+          this.transformDate = function (value) {
+            var d = Date.parse(value);
+            // handle timestamp as duration
+            if (d < _this.maxDurationYear) {
+              return _this.maxDurationYear - d;
+            }
+            return d;
+          };
+
           this.transformValue = function (value) {
             if (typeof value == 'string') {
               try {
-                var d = Date.parse(value);
-                return d;
+                return _this.transformDate(value);
               } catch (error) {
                 try {
                   var v = atob(value);
@@ -215,7 +223,7 @@ System.register([], function (_export, _context) {
                       var value = table.columns[j].data[i];
 
                       if (j == 0) {
-                        row.push(Date.parse(value));
+                        row.push(_this.transformDate(value));
                       } else {
                         row.push(_this.transformValue(value));
                       }
@@ -240,7 +248,7 @@ System.register([], function (_export, _context) {
                     for (var _i = 1; _i < table.columns.length; _i++) {
                       var target = table.columns[_i].name;
                       var datapoints = table.columns[_i].data.map(function (value, idx) {
-                        return [_this.transformValue(value), Date.parse(timestamps[idx])];
+                        return [_this.transformValue(value), _this.transformDate(timestamps[idx])];
                       });
                       results.push({ target: target, datapoints: datapoints });
                     }
@@ -265,6 +273,7 @@ System.register([], function (_export, _context) {
           var securityEnabled = instanceSettings.jsonData.securityEnabled;
           var username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous';
           var usersecret = securityEnabled ? instanceSettings.jsonData.secret : '';
+          var maxDurationYear = Date.parse('1971-01-01');
 
           this.name = instanceSettings.name;
           this.id = instanceSettings.id;
@@ -277,6 +286,7 @@ System.register([], function (_export, _context) {
           this.$q = $q;
           this.backendSrv = backendSrv;
           this.templateSrv = templateSrv;
+          this.maxDurationYear = maxDurationYear;
         }
 
         _createClass(Datasource, [{
