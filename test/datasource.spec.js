@@ -1,5 +1,6 @@
 import Q from 'q'
 import { expect } from 'chai'
+import { regeneratorRuntime } from 'regenerator-runtime';
 
 import Datasource from '../src/datasource'
 
@@ -87,6 +88,31 @@ describe('Datasource', function() {
       }
     }
 
+  const transformDate = value => {
+    let d = Date.parse(value)
+    // handle timestamp as duration
+    if (d < this.maxDurationYear) {
+      return this.maxDurationYear - d
+    }
+    return d
+  }
+
+  const transformValue = value => {
+    if (typeof value == 'string') {
+      try {
+        return this.transformDate(value)
+      } catch (error) {
+        try {
+          let v = atob(value)
+          return v
+        } catch (error) {
+          return value
+        }
+      }
+    }
+    return value
+  }
+
     const transformResponse = response => {
       const result = response.data
       if (result.tables.length === 0) {
@@ -100,8 +126,8 @@ describe('Datasource', function() {
       for (let i = 1; i < table.columns.length; i++) {
         const target = table.columns[i].name
         const datapoints = table.columns[i].data.map((value, idx) => [
-          value,
-          Date.parse(timestamps[idx])
+          transformValue(value),
+          transformDate(timestamps[idx])
         ])
         results.push({ target, datapoints })
       }
