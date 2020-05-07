@@ -172,6 +172,23 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
+          this.transformValue = function (value) {
+            if (typeof value == 'string') {
+              try {
+                var d = Date.parse(value);
+                return d;
+              } catch (error) {
+                try {
+                  var v = atob(value);
+                  return v;
+                } catch (error) {
+                  return value;
+                }
+              }
+            }
+            return value;
+          };
+
           this.transformResponse = function (response) {
             var result = response.data;
             if (result.tables.length === 0) {
@@ -182,7 +199,6 @@ System.register([], function (_export, _context) {
               case 'table':
                 {
                   var table = result.tables[0];
-                  var timestamps = table.columns[0].data;
                   var colCount = table.columns.length;
                   var rowCount = table.columns[0].data.length;
                   var columns = table.columns.map(function (c, i) {
@@ -200,10 +216,8 @@ System.register([], function (_export, _context) {
 
                       if (j == 0) {
                         row.push(Date.parse(value));
-                      } else if (typeof value == 'string') {
-                        row.push(atob(value));
                       } else {
-                        row.push(table.columns[j].data[i]);
+                        row.push(_this.transformValue(value));
                       }
                     }
                     rows.push(row);
@@ -226,7 +240,7 @@ System.register([], function (_export, _context) {
                     for (var _i = 1; _i < table.columns.length; _i++) {
                       var target = table.columns[_i].name;
                       var datapoints = table.columns[_i].data.map(function (value, idx) {
-                        return [value, Date.parse(timestamps[idx])];
+                        return [_this.transformValue(value), Date.parse(timestamps[idx])];
                       });
                       results.push({ target: target, datapoints: datapoints });
                     }

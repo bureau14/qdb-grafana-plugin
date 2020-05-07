@@ -107,6 +107,23 @@ export default class Datasource {
     }
   }
 
+  transformValue = value => {
+    if (typeof value == 'string') {
+      try {
+        let d = Date.parse(value)
+        return d
+      } catch (error) {
+        try {
+          let v = atob(value)
+          return v
+        } catch (error) {
+          return value
+        }
+      }
+    }
+    return value
+  }
+
   transformResponse = response => {
     const result = response.data
     if (result.tables.length === 0) {
@@ -116,7 +133,6 @@ export default class Datasource {
     switch (response.data.format) {
       case 'table': {
         const table = result.tables[0]
-        const timestamps = table.columns[0].data
         const colCount = table.columns.length
         const rowCount = table.columns[0].data.length
         const columns = table.columns.map((c, i) => {
@@ -134,16 +150,15 @@ export default class Datasource {
 
             if (j == 0) {
               row.push(Date.parse(value))
-            } else if (typeof value == 'string') {
-              row.push(atob(value))
             } else {
-              row.push(table.columns[j].data[i])
+              row.push(this.transformValue(value))
             }
           }
           rows.push(row)
         }
 
-        return [{
+        return [
+          {
           columns,
           rows,
           type: 'table'
@@ -158,7 +173,7 @@ export default class Datasource {
         for (let i = 1; i < table.columns.length; i++) {
           const target = table.columns[i].name
           const datapoints = table.columns[i].data.map((value, idx) => [
-            value,
+            this.transformValue(value),
             Date.parse(timestamps[idx])
           ])
           results.push({ target, datapoints })
