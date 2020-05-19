@@ -183,7 +183,7 @@ export default class Datasource {
           const target = table.columns[i].name
           const datapoints = table.columns[i].data.map((value, idx) => [
             value,
-            row.push(this.transformDate(value))
+            this.transformDate(value)
           ])
           results.push({ target, datapoints })
         }
