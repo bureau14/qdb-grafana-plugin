@@ -209,17 +209,17 @@ System.register([], function (_export, _context) {
                   });
                   var rows = [];
                   for (var i = 0; i < rowCount; i++) {
-                    var _row = [];
+                    var row = [];
                     for (var j = 0; j < colCount; j++) {
                       var value = table.columns[j].data[i];
 
                       if (j == 0) {
-                        _row.push(_this.transformDate(value));
+                        row.push(_this.transformDate(value));
                       } else {
-                        _row.push(transformValue(value));
+                        row.push(transformValue(value));
                       }
                     }
-                    rows.push(_row);
+                    rows.push(row);
                   }
 
                   return [{
@@ -238,7 +238,7 @@ System.register([], function (_export, _context) {
                   for (var _i = 1; _i < _table.columns.length; _i++) {
                     var target = _table.columns[_i].name;
                     var datapoints = _table.columns[_i].data.map(function (value, idx) {
-                      return [value, row.push(_this.transformDate(value))];
+                      return [value, _this.transformDate(value)];
                     });
                     results.push({ target: target, datapoints: datapoints });
                   }
