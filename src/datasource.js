@@ -27,7 +27,6 @@ export function transformResponse(response) {
   if (result.tables.length === 0) {
     return []
   }
-  console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
 
   switch (response.data.format) {
     case 'table': {
@@ -46,12 +45,10 @@ export function transformResponse(response) {
         let row = []
         for (let j = 0; j < colCount; j++) {
           const value = table.columns[j].data[i]
-          console.log('value:', value)
 
           if (j == 0) {
             row.push(transformDate(value))
           } else {
-            console.log('value:', value)
             row.push(transformValue(value))
           }
         }
@@ -68,15 +65,17 @@ export function transformResponse(response) {
     }
     default: {
       const table = result.tables[0]
+      const timestamps = table.columns[0].data
 
       let results = []
+
       for (let i = 1; i < table.columns.length; i++) {
         const target = table.columns[i].name
-        const datapoints = table.columns[i].data.map((value, idx) => [value, transformDate(value)])
+        const datapoints = table.columns[i].data.map((value, idx) => [
+          value,
+          transformDate(timestamps[idx])
+        ])
         results.push({ target, datapoints })
-        if (results.length > 0) {
-          console.log('result:', results[0].datapoints[0])
-        }
       }
 
       return results

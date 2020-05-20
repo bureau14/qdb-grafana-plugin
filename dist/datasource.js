@@ -3,7 +3,7 @@
 System.register([], function (_export, _context) {
   "use strict";
 
-  var _extends, _createClass, Datasource;
+  var _extends, _createClass, _typeof, Datasource;
 
   function _asyncToGenerator(fn) {
     return function () {
@@ -100,7 +100,6 @@ System.register([], function (_export, _context) {
     if (result.tables.length === 0) {
       return [];
     }
-    console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 
     switch (response.data.format) {
       case 'table':
@@ -120,12 +119,10 @@ System.register([], function (_export, _context) {
             var row = [];
             for (var j = 0; j < colCount; j++) {
               var value = table.columns[j].data[i];
-              console.log('value:', value);
 
               if (j == 0) {
                 row.push(transformDate(value));
               } else {
-                console.log('value:', value);
                 row.push(transformValue(value));
               }
             }
@@ -140,21 +137,26 @@ System.register([], function (_export, _context) {
         }
       default:
         {
-          var _table = result.tables[0];
+          var _ret = function () {
+            var table = result.tables[0];
+            var timestamps = table.columns[0].data;
 
-          var results = [];
-          for (var _i = 1; _i < _table.columns.length; _i++) {
-            var target = _table.columns[_i].name;
-            var datapoints = _table.columns[_i].data.map(function (value, idx) {
-              return [value, transformDate(value)];
-            });
-            results.push({ target: target, datapoints: datapoints });
-            if (results.length > 0) {
-              console.log('result:', results[0].datapoints[0]);
+            var results = [];
+
+            for (var _i = 1; _i < table.columns.length; _i++) {
+              var target = table.columns[_i].name;
+              var datapoints = table.columns[_i].data.map(function (value, idx) {
+                return [value, transformDate(timestamps[idx])];
+              });
+              results.push({ target: target, datapoints: datapoints });
             }
-          }
 
-          return results;
+            return {
+              v: results
+            };
+          }();
+
+          if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
         }
     }
   }
@@ -204,6 +206,12 @@ System.register([], function (_export, _context) {
           return Constructor;
         };
       }();
+
+      _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
+        return typeof obj;
+      } : function (obj) {
+        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
+      };
 
       Datasource = function () {
         function Datasource(instanceSettings, $q, backendSrv, templateSrv) {
