@@ -44,12 +44,7 @@ export function transformResponse(response) {
         let row = []
         for (let j = 0; j < colCount; j++) {
           const value = table.columns[j].data[i]
-
-          if (j == 0) {
-            row.push(Date.parse(value))
-          } else {
-            row.push(transformValue(value))
-          }
+          row.push(transformValue(value))
         }
         rows.push(row)
       }
