@@ -4,7 +4,6 @@ export function transformDate(value) {
   let d = Date.parse(value)
   // handle timestamp as duration
   if (d < maxDurationYear) {
-    console.log('shoud not go there')
     return d - epochYear
   }
   return d

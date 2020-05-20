@@ -73,7 +73,6 @@ System.register([], function (_export, _context) {
     var d = Date.parse(value);
     // handle timestamp as duration
     if (d < maxDurationYear) {
-      console.log('shoud not go there');
       return d - epochYear;
     }
     return d;
