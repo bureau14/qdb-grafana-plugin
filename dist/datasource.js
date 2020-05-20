@@ -67,21 +67,12 @@ System.register([], function (_export, _context) {
     }
   }
 
-  function transformDate(value) {
-    var maxDurationYear = Date.parse('1971-01-01');
-    var epochYear = Date.parse('1970-01-01');
-    var d = Date.parse(value);
-    // handle timestamp as duration
-    if (d < maxDurationYear) {
-      return d - epochYear;
-    }
-    return d;
-  }
-
-  _export('transformDate', transformDate);
-
   function transformValue(value) {
     if (typeof value == 'string') {
+      var d = Date.parse(value);
+      if (!isNaN(d)) {
+        return d;
+      }
       try {
         var v = window.atob(value);
         return v;
@@ -95,6 +86,7 @@ System.register([], function (_export, _context) {
   _export('transformValue', transformValue);
 
   function transformResponse(response) {
+    var maxDurationYear = Date.parse('1971-01-01');
     var result = response.data;
     if (result.tables.length === 0) {
       return [];
@@ -108,8 +100,14 @@ System.register([], function (_export, _context) {
           var rowCount = table.columns[0].data.length;
           var columns = table.columns.map(function (c, i) {
             var result = { text: c.name };
-            if (i === 0) {
-              result.type = 'time';
+            if (c.data.length > 0) {
+              var value = table.columns[i].data[0];
+              if (typeof value == 'string') {
+                var d = Date.parse(value);
+                if (d >= maxDurationYear) {
+                  result.type = 'time';
+                }
+              }
             }
             return result;
           });
@@ -120,7 +118,7 @@ System.register([], function (_export, _context) {
               var value = table.columns[j].data[i];
 
               if (j == 0) {
-                row.push(transformDate(value));
+                row.push(Date.parse(value));
               } else {
                 row.push(transformValue(value));
               }
@@ -145,7 +143,7 @@ System.register([], function (_export, _context) {
             for (var _i = 1; _i < table.columns.length; _i++) {
               var target = table.columns[_i].name;
               var datapoints = table.columns[_i].data.map(function (value, idx) {
-                return [value, transformDate(timestamps[idx])];
+                return [value, Date.parse(timestamps[idx])];
               });
               results.push({ target: target, datapoints: datapoints });
             }

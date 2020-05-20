@@ -192,7 +192,7 @@ describe('Datasource', function() {
         }
       ])
     })
-    
+
     it('should work with a duration timestamp with a table format', () => {
       let tableResponse = durationResponse
       tableResponse.data.format = 'table'
@@ -201,8 +201,7 @@ describe('Datasource', function() {
         {
           columns: [
             {
-              text: 'timestamp',
-              type: 'time'
+              text: 'timestamp'
             },
             {
               text: 'min(rate)'
@@ -222,5 +221,65 @@ describe('Datasource', function() {
         }
       ])
     })
+
+    const responseWithTimestampValue = {
+      data: {
+        tables: [
+          {
+            columns: [
+              {
+                data: [
+                  '2019-02-28T18:47:52Z',
+                  '2019-02-28T21:47:52Z',
+                  '2019-03-25T09:47:52Z',
+                  '2019-03-25T12:47:52Z',
+                  '2019-03-25T15:47:52Z'
+                ],
+                name: 'timestamp'
+              },
+              {
+                data: [
+                  '2019-02-28T18:47:52Z',
+                  '2019-02-28T21:47:52Z',
+                  '2019-03-25T09:47:52Z',
+                  '2019-03-25T12:47:52Z',
+                  '2019-03-25T15:47:52Z'
+                ],
+                name: 'reception'
+              }
+            ],
+            name: 'orders.old.2y'
+          }
+        ]
+      }
+    }
+    it('should work with a timestamp as value with a table format', () => {
+      let tableResponse = responseWithTimestampValue
+      tableResponse.data.format = 'table'
+      const result = transformResponse(tableResponse)
+      expect(result).to.deep.equal([
+        {
+          columns: [
+            {
+              text: 'timestamp',
+              type: 'time'
+            },
+            {
+              text: 'reception',
+              type: 'time'
+            }
+          ],
+          rows: [
+            [Date.parse('2019-02-28T18:47:52Z'), Date.parse('2019-02-28T18:47:52Z')],
+            [Date.parse('2019-02-28T21:47:52Z'), Date.parse('2019-02-28T21:47:52Z')],
+            [Date.parse('2019-03-25T09:47:52Z'), Date.parse('2019-03-25T09:47:52Z')],
+            [Date.parse('2019-03-25T12:47:52Z'), Date.parse('2019-03-25T12:47:52Z')],
+            [Date.parse('2019-03-25T15:47:52Z'), Date.parse('2019-03-25T15:47:52Z')]
+          ],
+          type: 'table'
+        }
+      ])
+    })
+
   })
 })

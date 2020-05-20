@@ -1,16 +1,9 @@
-export function transformDate(value) {
-  const maxDurationYear = Date.parse('1971-01-01')
-  const epochYear = Date.parse('1970-01-01')
-  let d = Date.parse(value)
-  // handle timestamp as duration
-  if (d < maxDurationYear) {
-    return d - epochYear
-  }
-  return d
-}
-
 export function transformValue(value) {
   if (typeof value == 'string') {
+    let d = Date.parse(value)
+    if (!isNaN(d)) {
+      return d
+    }
     try {
       let v = window.atob(value)
       return v
@@ -22,6 +15,7 @@ export function transformValue(value) {
 }
 
 export function transformResponse(response) {
+  const maxDurationYear = Date.parse('1971-01-01')
   const result = response.data
   if (result.tables.length === 0) {
     return []
@@ -34,8 +28,14 @@ export function transformResponse(response) {
       const rowCount = table.columns[0].data.length
       const columns = table.columns.map((c, i) => {
         let result = { text: c.name }
-        if (i === 0) {
-          result.type = 'time'
+        if (c.data.length > 0) {
+          let value = table.columns[i].data[0]
+          if (typeof value == 'string') {
+            let d = Date.parse(value)
+            if (d >= maxDurationYear) {
+              result.type = 'time'
+            }
+          }
         }
         return result
       })
@@ -46,7 +46,7 @@ export function transformResponse(response) {
           const value = table.columns[j].data[i]
 
           if (j == 0) {
-            row.push(transformDate(value))
+            row.push(Date.parse(value))
           } else {
             row.push(transformValue(value))
           }
@@ -72,7 +72,7 @@ export function transformResponse(response) {
         const target = table.columns[i].name
         const datapoints = table.columns[i].data.map((value, idx) => [
           value,
-          transformDate(timestamps[idx])
+          Date.parse(timestamps[idx])
         ])
         results.push({ target, datapoints })
       }
