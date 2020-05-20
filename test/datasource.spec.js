@@ -2,7 +2,7 @@ import Q from 'q'
 import { expect } from 'chai'
 import { regeneratorRuntime } from 'regenerator-runtime';
 
-import Datasource from '../src/datasource'
+import { Datasource, transformResponse } from '../src/datasource'
 
 describe('Datasource', function() {
   const instanceSettings = {
@@ -86,28 +86,6 @@ describe('Datasource', function() {
           }
         ]
       }
-    }
-
-    const transformResponse = response => {
-      const result = response.data
-      if (result.tables.length === 0) {
-        return []
-      }
-      const table = result.tables[0]
-      const timestamps = table.columns[0].data
-
-      let results = []
-
-      for (let i = 1; i < table.columns.length; i++) {
-        const target = table.columns[i].name
-        const datapoints = table.columns[i].data.map((value, idx) => [
-          value,
-          Date.parse(timestamps[idx])
-        ])
-        results.push({ target, datapoints })
-      }
-
-      return results
     }
 
     it('should work', () => {

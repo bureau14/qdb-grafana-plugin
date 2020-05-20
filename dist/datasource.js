@@ -34,18 +34,6 @@ System.register([], function (_export, _context) {
     };
   }
 
-  function _toConsumableArray(arr) {
-    if (Array.isArray(arr)) {
-      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
-        arr2[i] = arr[i];
-      }
-
-      return arr2;
-    } else {
-      return Array.from(arr);
-    }
-  }
-
   function _defineProperty(obj, key, value) {
     if (key in obj) {
       Object.defineProperty(obj, key, {
@@ -66,6 +54,121 @@ System.register([], function (_export, _context) {
       throw new TypeError("Cannot call a class as a function");
     }
   }
+
+  function _toConsumableArray(arr) {
+    if (Array.isArray(arr)) {
+      for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) {
+        arr2[i] = arr[i];
+      }
+
+      return arr2;
+    } else {
+      return Array.from(arr);
+    }
+  }
+
+  function transformDate(value) {
+    var maxDurationYear = Date.parse('1971-01-01');
+    var epochYear = Date.parse('1970-01-01');
+    var d = Date.parse(value);
+    // handle timestamp as duration
+    if (d < maxDurationYear) {
+      console.log('shoud not go there');
+      return d - epochYear;
+    }
+    return d;
+  }
+
+  _export('transformDate', transformDate);
+
+  function transformValue(value) {
+    if (typeof value == 'string') {
+      try {
+        var v = window.atob(value);
+        return v;
+      } catch (error) {
+        return value;
+      }
+    }
+    return value;
+  }
+
+  _export('transformValue', transformValue);
+
+  function transformResponse(response) {
+    var result = response.data;
+    if (result.tables.length === 0) {
+      return [];
+    }
+    console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+
+    switch (response.data.format) {
+      case 'table':
+        {
+          var table = result.tables[0];
+          var colCount = table.columns.length;
+          var rowCount = table.columns[0].data.length;
+          var columns = table.columns.map(function (c, i) {
+            var result = { text: c.name };
+            if (i === 0) {
+              result.type = 'time';
+            }
+            return result;
+          });
+          var rows = [];
+          for (var i = 0; i < rowCount; i++) {
+            var row = [];
+            for (var j = 0; j < colCount; j++) {
+              var value = table.columns[j].data[i];
+              console.log('value:', value);
+
+              if (j == 0) {
+                row.push(transformDate(value));
+              } else {
+                console.log('value:', value);
+                row.push(transformValue(value));
+              }
+            }
+            rows.push(row);
+          }
+
+          return [{
+            columns: columns,
+            rows: rows,
+            type: 'table'
+          }];
+        }
+      default:
+        {
+          var _table = result.tables[0];
+
+          var results = [];
+          for (var _i = 1; _i < _table.columns.length; _i++) {
+            var target = _table.columns[_i].name;
+            var datapoints = _table.columns[_i].data.map(function (value, idx) {
+              return [value, transformDate(value)];
+            });
+            results.push({ target: target, datapoints: datapoints });
+            if (results.length > 0) {
+              console.log('result:', results[0].datapoints[0]);
+            }
+          }
+
+          return results;
+        }
+    }
+  }
+
+  _export('transformResponse', transformResponse);
+
+  function transformAll(results) {
+    var data = results.map(transformResponse).reduce(function (a, b) {
+      return [].concat(_toConsumableArray(a), _toConsumableArray(b));
+    }, []);
+    return { data: data };
+  }
+
+  _export('transformAll', transformAll);
 
   return {
     setters: [],
@@ -164,102 +267,9 @@ System.register([], function (_export, _context) {
             }, {}));
           };
 
-          this.transformDate = function (value) {
-            var d = Date.parse(value);
-            // handle timestamp as duration
-            if (d < _this.maxDurationYear) {
-              return d - _this.epochYear;
-            }
-            return d;
-          };
-
-          this.transformValue = function (value) {
-            if (typeof value == 'string') {
-              try {
-                var v = window.atob(value);
-                return v;
-              } catch (error) {
-                return value;
-              }
-            }
-            return value;
-          };
-
-          this.transformResponse = function (response) {
-            var result = response.data;
-            if (result.tables.length === 0) {
-              return [];
-            }
-            console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
-
-            switch (response.data.format) {
-              case 'table':
-                {
-                  var table = result.tables[0];
-                  var colCount = table.columns.length;
-                  var rowCount = table.columns[0].data.length;
-                  var columns = table.columns.map(function (c, i) {
-                    var result = { text: c.name };
-                    if (i === 0) {
-                      result.type = 'time';
-                    }
-                    return result;
-                  });
-                  var rows = [];
-                  for (var i = 0; i < rowCount; i++) {
-                    var row = [];
-                    for (var j = 0; j < colCount; j++) {
-                      var value = table.columns[j].data[i];
-                      console.log('value:', value);
-
-                      if (j == 0) {
-                        row.push(_this.transformDate(value));
-                      } else {
-                        console.log('value:', value);
-                        row.push(transformValue(value));
-                      }
-                    }
-                    rows.push(row);
-                  }
-
-                  return [{
-                    columns: columns,
-                    rows: rows,
-                    type: 'table'
-                  }];
-                }
-              default:
-                {
-                  var _table = result.tables[0];
-                  var timestamps = _table.columns[0].data;
-
-                  var results = [];
-
-                  for (var _i = 1; _i < _table.columns.length; _i++) {
-                    var target = _table.columns[_i].name;
-                    var datapoints = _table.columns[_i].data.map(function (value, idx) {
-                      return [value, _this.transformDate(value)];
-                    });
-                    results.push({ target: target, datapoints: datapoints });
-                  }
-
-                  return results;
-                }
-            }
-          };
-
-          this.transformAll = function (results) {
-            var data = results.map(_this.transformResponse).reduce(function (a, b) {
-              return [].concat(_toConsumableArray(a), _toConsumableArray(b));
-            }, []);
-            return { data: data };
-          };
-
           var securityEnabled = instanceSettings.jsonData.securityEnabled;
           var username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous';
           var usersecret = securityEnabled ? instanceSettings.jsonData.secret : '';
-          var maxDurationYear = Date.parse('1971-01-01');
-          var epochYear = Date.parse('1970-01-01');
 
           this.name = instanceSettings.name;
           this.id = instanceSettings.id;
@@ -272,9 +282,6 @@ System.register([], function (_export, _context) {
           this.$q = $q;
           this.backendSrv = backendSrv;
           this.templateSrv = templateSrv;
-
-          this.maxDurationYear = maxDurationYear;
-          this.epochYear = epochYear;
 
           console.log('-- :: construct');
         }
@@ -421,7 +428,7 @@ System.register([], function (_export, _context) {
                     case 8:
                       results = _context4.sent;
                       _context4.next = 11;
-                      return this.transformAll(results);
+                      return transformAll(results);
 
                     case 11:
                       transformedResults = _context4.sent;

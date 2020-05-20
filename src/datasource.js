@@ -1,10 +1,99 @@
+export function transformDate(value) {
+  const maxDurationYear = Date.parse('1971-01-01')
+  const epochYear = Date.parse('1970-01-01')
+  let d = Date.parse(value)
+  // handle timestamp as duration
+  if (d < maxDurationYear) {
+    console.log('shoud not go there')
+    return d - epochYear
+  }
+  return d
+}
+
+export function transformValue(value) {
+  if (typeof value == 'string') {
+    try {
+      let v = window.atob(value)
+      return v
+    } catch (error) {
+      return value
+    }
+  }
+  return value
+}
+
+export function transformResponse(response) {
+  const result = response.data
+  if (result.tables.length === 0) {
+    return []
+  }
+  console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+
+  switch (response.data.format) {
+    case 'table': {
+      const table = result.tables[0]
+      const colCount = table.columns.length
+      const rowCount = table.columns[0].data.length
+      const columns = table.columns.map((c, i) => {
+        let result = { text: c.name }
+        if (i === 0) {
+          result.type = 'time'
+        }
+        return result
+      })
+      let rows = []
+      for (let i = 0; i < rowCount; i++) {
+        let row = []
+        for (let j = 0; j < colCount; j++) {
+          const value = table.columns[j].data[i]
+          console.log('value:', value)
+
+          if (j == 0) {
+            row.push(transformDate(value))
+          } else {
+            console.log('value:', value)
+            row.push(transformValue(value))
+          }
+        }
+        rows.push(row)
+      }
+
+      return [
+        {
+          columns,
+          rows,
+          type: 'table'
+        }
+      ]
+    }
+    default: {
+      const table = result.tables[0]
+
+      let results = []
+      for (let i = 1; i < table.columns.length; i++) {
+        const target = table.columns[i].name
+        const datapoints = table.columns[i].data.map((value, idx) => [value, transformDate(value)])
+        results.push({ target, datapoints })
+        if (results.length > 0) {
+          console.log('result:', results[0].datapoints[0])
+        }
+      }
+
+      return results
+    }
+  }
+}
+
+export function transformAll(results) {
+  const data = results.map(transformResponse).reduce((a, b) => [...a, ...b], [])
+  return { data }
+}
+
 export default class Datasource {
   constructor(instanceSettings, $q, backendSrv, templateSrv) {
     const securityEnabled = instanceSettings.jsonData.securityEnabled
     const username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous'
     const usersecret = securityEnabled ? instanceSettings.jsonData.secret : ''
-    const maxDurationYear = Date.parse('1971-01-01')
-    const epochYear = Date.parse('1970-01-01')
 
     this.name = instanceSettings.name
     this.id = instanceSettings.id
@@ -18,9 +107,6 @@ export default class Datasource {
     this.backendSrv = backendSrv
     this.templateSrv = templateSrv
 
-    this.maxDurationYear = maxDurationYear
-    this.epochYear = epochYear
-    
     console.log('-- :: construct')
   }
 
@@ -114,96 +200,6 @@ export default class Datasource {
     }
   }
 
-  transformDate = value => {
-    let d = Date.parse(value)
-    // handle timestamp as duration
-    if (d < this.maxDurationYear) {
-      return d - this.epochYear
-    }
-    return d
-  }
-
-  transformValue = value => {
-    if (typeof value == 'string') {
-      try {
-        let v = window.atob(value)
-        return v
-      } catch (error) {
-        return value
-      }
-    }
-    return value
-  }
-
-  transformResponse = response => {
-    const result = response.data
-    if (result.tables.length === 0) {
-      return []
-    }
-    console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-
-    switch (response.data.format) {
-      case 'table': {
-        const table = result.tables[0]
-        const colCount = table.columns.length
-        const rowCount = table.columns[0].data.length
-        const columns = table.columns.map((c, i) => {
-          let result = { text: c.name }
-          if (i === 0) {
-            result.type = 'time'
-          }
-          return result
-        })
-        let rows = []
-        for (let i = 0; i < rowCount; i++) {
-          let row = []
-          for (let j = 0; j < colCount; j++) {
-            const value = table.columns[j].data[i]
-            console.log('value:', value)
-
-            if (j == 0) {
-              row.push(this.transformDate(value))
-            } else {
-              console.log('value:', value)
-              row.push(transformValue(value))
-            }
-          }
-          rows.push(row)
-        }
-
-        return [
-          {
-            columns,
-            rows,
-            type: 'table'
-          }
-        ]
-      }
-      default: {
-        const table = result.tables[0]
-        const timestamps = table.columns[0].data
-
-        let results = []
-
-        for (let i = 1; i < table.columns.length; i++) {
-          const target = table.columns[i].name
-          const datapoints = table.columns[i].data.map((value, idx) => [
-            value,
-            this.transformDate(value)
-          ])
-          results.push({ target, datapoints })
-        }
-
-        return results
-      }
-    }
-  }
-
-  transformAll = results => {
-    const data = results.map(this.transformResponse).reduce((a, b) => [...a, ...b], [])
-    return { data }
-  }
-
   async query(options) {
     const variables = this.getVariables(options)
 
@@ -222,7 +218,7 @@ export default class Datasource {
 
     await this.checkToken()
     const results = await this.doQueries(queries)
-    const transformedResults = await this.transformAll(results)
+    const transformedResults = await transformAll(results)
     return transformedResults
   }
 
