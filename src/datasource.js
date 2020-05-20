@@ -29,7 +29,7 @@ export function transformResponse(response) {
       const columns = table.columns.map((c, i) => {
         let result = { text: c.name }
         if (c.data.length > 0) {
-          let value = table.columns[i].data[0]
+          let value = c.data[0]
           if (typeof value == 'string') {
             let d = Date.parse(value)
             if (d >= maxDurationYear) {

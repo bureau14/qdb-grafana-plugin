@@ -101,7 +101,7 @@ System.register([], function (_export, _context) {
           var columns = table.columns.map(function (c, i) {
             var result = { text: c.name };
             if (c.data.length > 0) {
-              var value = table.columns[i].data[0];
+              var value = c.data[0];
               if (typeof value == 'string') {
                 var d = Date.parse(value);
                 if (d >= maxDurationYear) {
