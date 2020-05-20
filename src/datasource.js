@@ -71,7 +71,7 @@ export function transformResponse(response) {
       for (let i = 1; i < table.columns.length; i++) {
         const target = table.columns[i].name
         const datapoints = table.columns[i].data.map((value, idx) => [
-          value,
+          transformValue(value),
           Date.parse(timestamps[idx])
         ])
         results.push({ target, datapoints })
@@ -104,8 +104,6 @@ export default class Datasource {
     this.$q = $q
     this.backendSrv = backendSrv
     this.templateSrv = templateSrv
-
-    console.log('-- :: construct')
   }
 
   async login() {
@@ -150,7 +148,6 @@ export default class Datasource {
   }
 
   doQuery = ({ query, format }) => {
-    console.log('query:', query)
     return this.backendSrv
       .datasourceRequest({
         url: `${this.url}/api/query`,

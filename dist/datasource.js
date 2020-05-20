@@ -143,7 +143,7 @@ System.register([], function (_export, _context) {
             for (var _i = 1; _i < table.columns.length; _i++) {
               var target = table.columns[_i].name;
               var datapoints = table.columns[_i].data.map(function (value, idx) {
-                return [value, Date.parse(timestamps[idx])];
+                return [transformValue(value), Date.parse(timestamps[idx])];
               });
               results.push({ target: target, datapoints: datapoints });
             }
@@ -220,7 +220,6 @@ System.register([], function (_export, _context) {
             var query = _ref.query,
                 format = _ref.format;
 
-            console.log('query:', query);
             return _this.backendSrv.datasourceRequest({
               url: _this.url + '/api/query',
               method: 'POST',
@@ -287,8 +286,6 @@ System.register([], function (_export, _context) {
           this.$q = $q;
           this.backendSrv = backendSrv;
           this.templateSrv = templateSrv;
-
-          console.log('-- :: construct');
         }
 
         _createClass(Datasource, [{
