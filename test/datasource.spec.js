@@ -280,6 +280,5 @@ describe('Datasource', function() {
         }
       ])
     })
-
   })
 })
