@@ -4,7 +4,7 @@ export default class Datasource {
     const username = securityEnabled ? instanceSettings.jsonData.name : 'anonymous'
     const usersecret = securityEnabled ? instanceSettings.jsonData.secret : ''
     const maxDurationYear = Date.parse('1971-01-01')
-    const epochYear  = Date.parse('1970-01-01')
+    const epochYear = Date.parse('1970-01-01')
 
     this.name = instanceSettings.name
     this.id = instanceSettings.id
@@ -17,9 +17,11 @@ export default class Datasource {
     this.$q = $q
     this.backendSrv = backendSrv
     this.templateSrv = templateSrv
-    
+
     this.maxDurationYear = maxDurationYear
     this.epochYear = epochYear
+    
+    console.log('-- :: construct')
   }
 
   async login() {
@@ -64,18 +66,18 @@ export default class Datasource {
   }
 
   doQuery = ({ query, format }) => {
-    return this.backendSrv.datasourceRequest({
-      url: `${this.url}/api/query`,
-      method: 'POST',
-      data: `{ "query" : "${query}" }`,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.token}`
-      }
-    }).then(result => {
-      result.data.format = format
-      return result
-    })
+    console.log('query:', query)
+    return this.backendSrv
+      .datasourceRequest({
+        url: `${this.url}/api/query`,
+        method: 'POST',
+        data: `{ "query" : "${query}" }`,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` }
+      })
+      .then(result => {
+        result.data.format = format
+        return result
+      })
   }
 
   doQueries = queries => Promise.all(queries.map(this.doQuery))
@@ -138,11 +140,11 @@ export default class Datasource {
     if (result.tables.length === 0) {
       return []
     }
+    console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
 
     switch (response.data.format) {
       case 'table': {
         const table = result.tables[0]
-        const timestamps = table.columns[0].data
         const colCount = table.columns.length
         const rowCount = table.columns[0].data.length
         const columns = table.columns.map((c, i) => {
@@ -157,21 +159,25 @@ export default class Datasource {
           let row = []
           for (let j = 0; j < colCount; j++) {
             const value = table.columns[j].data[i]
+            console.log('value:', value)
 
             if (j == 0) {
               row.push(this.transformDate(value))
             } else {
+              console.log('value:', value)
               row.push(transformValue(value))
             }
           }
           rows.push(row)
         }
 
-        return [{
-          columns,
-          rows,
-          type: 'table'
-        }]
+        return [
+          {
+            columns,
+            rows,
+            type: 'table'
+          }
+        ]
       }
       default: {
         const table = result.tables[0]

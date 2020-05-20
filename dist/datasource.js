@@ -112,14 +112,12 @@ System.register([], function (_export, _context) {
             var query = _ref.query,
                 format = _ref.format;
 
+            console.log('query:', query);
             return _this.backendSrv.datasourceRequest({
               url: _this.url + '/api/query',
               method: 'POST',
               data: '{ "query" : "' + query + '" }',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: 'Bearer ' + _this.token
-              }
+              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _this.token }
             }).then(function (result) {
               result.data.format = format;
               return result;
@@ -192,12 +190,12 @@ System.register([], function (_export, _context) {
             if (result.tables.length === 0) {
               return [];
             }
+            console.log('waaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
 
             switch (response.data.format) {
               case 'table':
                 {
                   var table = result.tables[0];
-                  var timestamps = table.columns[0].data;
                   var colCount = table.columns.length;
                   var rowCount = table.columns[0].data.length;
                   var columns = table.columns.map(function (c, i) {
@@ -212,10 +210,12 @@ System.register([], function (_export, _context) {
                     var row = [];
                     for (var j = 0; j < colCount; j++) {
                       var value = table.columns[j].data[i];
+                      console.log('value:', value);
 
                       if (j == 0) {
                         row.push(_this.transformDate(value));
                       } else {
+                        console.log('value:', value);
                         row.push(transformValue(value));
                       }
                     }
@@ -231,7 +231,7 @@ System.register([], function (_export, _context) {
               default:
                 {
                   var _table = result.tables[0];
-                  var _timestamps = _table.columns[0].data;
+                  var timestamps = _table.columns[0].data;
 
                   var results = [];
 
@@ -275,6 +275,8 @@ System.register([], function (_export, _context) {
 
           this.maxDurationYear = maxDurationYear;
           this.epochYear = epochYear;
+
+          console.log('-- :: construct');
         }
 
         _createClass(Datasource, [{
