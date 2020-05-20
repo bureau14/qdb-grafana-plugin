@@ -253,6 +253,22 @@ describe('Datasource', function() {
         ]
       }
     }
+    it('should work with a timestamp as value', () => {
+      const result = transformResponse(responseWithTimestampValue)
+      expect(result).to.deep.equal([
+        {
+          target: 'reception',
+          datapoints: [
+            [Date.parse('2019-02-28T18:47:52Z'), Date.parse('2019-02-28T18:47:52Z')],
+            [Date.parse('2019-02-28T21:47:52Z'), Date.parse('2019-02-28T21:47:52Z')],
+            [Date.parse('2019-03-25T09:47:52Z'), Date.parse('2019-03-25T09:47:52Z')],
+            [Date.parse('2019-03-25T12:47:52Z'), Date.parse('2019-03-25T12:47:52Z')],
+            [Date.parse('2019-03-25T15:47:52Z'), Date.parse('2019-03-25T15:47:52Z')]
+          ]
+        }
+      ])
+    })
+
     it('should work with a timestamp as value with a table format', () => {
       let tableResponse = responseWithTimestampValue
       tableResponse.data.format = 'table'
