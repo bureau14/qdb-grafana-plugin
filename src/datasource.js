@@ -1,3 +1,87 @@
+export function transformValue(value) {
+  if (typeof value == 'string') {
+    let d = Date.parse(value)
+    if (!isNaN(d)) {
+      return d
+    }
+    try {
+      let v = window.atob(value)
+      return v
+    } catch (error) {
+      return value
+    }
+  }
+  return value
+}
+
+export function transformResponse(response) {
+  const maxDurationYear = Date.parse('1971-01-01')
+  const result = response.data
+  if (result.tables.length === 0) {
+    return []
+  }
+
+  switch (response.data.format) {
+    case 'table': {
+      const table = result.tables[0]
+      const colCount = table.columns.length
+      const rowCount = table.columns[0].data.length
+      const columns = table.columns.map((c, i) => {
+        let result = { text: c.name }
+        if (c.data.length > 0) {
+          let value = c.data[0]
+          if (typeof value == 'string') {
+            let d = Date.parse(value)
+            if (d >= maxDurationYear) {
+              result.type = 'time'
+            }
+          }
+        }
+        return result
+      })
+      let rows = []
+      for (let i = 0; i < rowCount; i++) {
+        let row = []
+        for (let j = 0; j < colCount; j++) {
+          const value = table.columns[j].data[i]
+          row.push(transformValue(value))
+        }
+        rows.push(row)
+      }
+
+      return [
+        {
+          columns,
+          rows,
+          type: 'table'
+        }
+      ]
+    }
+    default: {
+      const table = result.tables[0]
+      const timestamps = table.columns[0].data
+
+      let results = []
+
+      for (let i = 1; i < table.columns.length; i++) {
+        const target = table.columns[i].name
+        const datapoints = table.columns[i].data.map((value, idx) => [
+          transformValue(value),
+          Date.parse(timestamps[idx])
+        ])
+        results.push({ target, datapoints })
+      }
+
+      return results
+    }
+  }
+}
+
+export function transformAll(results) {
+  const data = results.map(transformResponse).reduce((a, b) => [...a, ...b], [])
+  return { data }
+}
+
 export default class Datasource {
   constructor(instanceSettings, $q, backendSrv, templateSrv) {
     const securityEnabled = instanceSettings.jsonData.securityEnabled
@@ -59,18 +143,17 @@ export default class Datasource {
   }
 
   doQuery = ({ query, format }) => {
-    return this.backendSrv.datasourceRequest({
-      url: `${this.url}/api/query`,
-      method: 'POST',
-      data: `{ "query" : "${query}" }`,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.token}`
-      }
-    }).then(result => {
-      result.data.format = format
-      return result
-    })
+    return this.backendSrv
+      .datasourceRequest({
+        url: `${this.url}/api/query`,
+        method: 'POST',
+        data: `{ "query" : "${query}" }`,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` }
+      })
+      .then(result => {
+        result.data.format = format
+        return result
+      })
   }
 
   doQueries = queries => Promise.all(queries.map(this.doQuery))
@@ -107,73 +190,6 @@ export default class Datasource {
     }
   }
 
-  transformResponse = response => {
-    const result = response.data
-    if (result.tables.length === 0) {
-      return []
-    }
-
-    switch (response.data.format) {
-      case 'table': {
-        const table = result.tables[0]
-        const timestamps = table.columns[0].data
-        const colCount = table.columns.length
-        const rowCount = table.columns[0].data.length
-        const columns = table.columns.map((c, i) => {
-          let result = { text: c.name }
-          if (i === 0) {
-            result.type = 'time'
-          }
-          return result
-        })
-        let rows = []
-        for (let i = 0; i < rowCount; i++) {
-          let row = []
-          for (let j = 0; j < colCount; j++) {
-            const value = table.columns[j].data[i]
-
-            if (j == 0) {
-              row.push(Date.parse(value))
-            } else if (typeof value == 'string') {
-              row.push(atob(value))
-            } else {
-              row.push(table.columns[j].data[i])
-            }
-          }
-          rows.push(row)
-        }
-
-        return [{
-          columns,
-          rows,
-          type: 'table'
-        }]
-      }
-      default: {
-        const table = result.tables[0]
-        const timestamps = table.columns[0].data
-
-        let results = []
-
-        for (let i = 1; i < table.columns.length; i++) {
-          const target = table.columns[i].name
-          const datapoints = table.columns[i].data.map((value, idx) => [
-            value,
-            Date.parse(timestamps[idx])
-          ])
-          results.push({ target, datapoints })
-        }
-
-        return results
-      }
-    }
-  }
-
-  transformAll = results => {
-    const data = results.map(this.transformResponse).reduce((a, b) => [...a, ...b], [])
-    return { data }
-  }
-
   async query(options) {
     const variables = this.getVariables(options)
 
@@ -192,7 +208,7 @@ export default class Datasource {
 
     await this.checkToken()
     const results = await this.doQueries(queries)
-    const transformedResults = await this.transformAll(results)
+    const transformedResults = await transformAll(results)
     return transformedResults
   }
 
