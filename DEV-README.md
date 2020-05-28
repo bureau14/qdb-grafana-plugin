@@ -22,11 +22,29 @@ npm install
 npm run build
 ```
 
-Common commands:
+## Testing
 
-```sh
-npm run build
-npm run start # Same as `yarn build`, but in watch mode
+### Download:
+*-${your_platform}-c-api.*!**/*=>qdb
+*-${your_platform}-server.*!bin/*=>qdb/bin
+*-${your_platform}-utils.*!bin/*=>qdb/bin
+*-${your_platform}-rest.*!bin/*=>qdb/bin
+
+### Test
+Open a bash windows
+```sh 
+export LD_LIBRARY_PATH=qdb/lib # on linux
+export PATH=`pwd`/qdb/bin:$PATH # on windows
+
+# run the services
+bash scripts/tests/setup/start-services.sh
+bash scripts/tests/rest-setup/start-services.sh
+
+# test
 npm run test
-npm run lint
+
+# stop the services
+bash scripts/tests/setup/stop-services.sh
+bash scripts/tests/rest-setup/stop-services.sh
 ```
+

@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -xe
+
+if [[ -z ${QDB_DIR+set} ]]; then
+    QDB_DIR="qdb/bin"
+    echo "Setting QDB_DIR to ${QDB_DIR}"
+fi
+
+if [[ ! -d ${QDB_DIR} ]]; then
+    echo "Please provide a valid binary directory, got: ${QDB_DIR}"
+    exit 1
+fi
+
+set +u
+
+QDB_REST="${QDB_DIR}/qdb_rest"
+if [[ ${CMAKE_BUILD_TYPE} == "Debug" ]]; then
+    QDB_REST="${QDB_REST}d"
+fi
+
+set -u
+
+case "$(uname)" in
+    MINGW*)
+        QDB_REST=${QDB_REST}.exe
+    ;;
+    *)
+    ;;
+esac
+
+FOUND=0
+if [[ ! -f ${QDB_REST} ]]; then
+    echo "Binary ${QDB_REST} not found."
+    FOUND=1
+fi
+
+if [[ ${FOUND} != 0 ]] ; then
+    echo "Binaries not found. Exiting..."
+    exit 1
+fi
+
+QDB_REST_FILENAME=${QDB_REST##*/}
