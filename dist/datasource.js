@@ -3,7 +3,7 @@
 System.register([], function (_export, _context) {
   "use strict";
 
-  var _extends, _createClass, _typeof, Datasource;
+  var _extends, _createClass, _typeof, atob, req, Datasource;
 
   function _asyncToGenerator(fn) {
     return function () {
@@ -67,20 +67,20 @@ System.register([], function (_export, _context) {
     }
   }
 
-  function transformValue(value) {
-    if (typeof value == 'string') {
-      var d = Date.parse(value);
-      if (!isNaN(d)) {
-        return d;
-      }
-      try {
-        var v = window.atob(value);
-        return v;
-      } catch (error) {
+  function transformValue(column_type, value) {
+    switch (column_type) {
+      case 'timestamp':
+        return Date.parse(value);
+      case 'blob':
+        return atob(value);
+      case 'string':
+      case 'double':
+      case 'int64':
+      case 'count':
         return value;
-      }
+      default:
+        throw 'unexpected column type: ' + column_type;
     }
-    return value;
   }
 
   _export('transformValue', transformValue);
@@ -100,13 +100,10 @@ System.register([], function (_export, _context) {
           var rowCount = table.columns[0].data.length;
           var columns = table.columns.map(function (c, i) {
             var result = { text: c.name };
-            if (c.data.length > 0) {
-              var value = c.data[0];
-              if (typeof value == 'string') {
-                var d = Date.parse(value);
-                if (d >= maxDurationYear) {
-                  result.type = 'time';
-                }
+            if (c.data.length > 0 && c.type == 'timestamp') {
+              var d = Date.parse(c.data[0]);
+              if (d >= maxDurationYear) {
+                result.type = 'time';
               }
             }
             return result;
@@ -116,7 +113,7 @@ System.register([], function (_export, _context) {
             var row = [];
             for (var j = 0; j < colCount; j++) {
               var value = table.columns[j].data[i];
-              row.push(transformValue(value));
+              row.push(transformValue(table.columns[j].type, value));
             }
             rows.push(row);
           }
@@ -135,12 +132,16 @@ System.register([], function (_export, _context) {
 
             var results = [];
 
-            for (var _i = 1; _i < table.columns.length; _i++) {
+            var _loop = function _loop(_i) {
               var target = table.columns[_i].name;
               var datapoints = table.columns[_i].data.map(function (value, idx) {
-                return [transformValue(value), Date.parse(timestamps[idx])];
+                return [transformValue(table.columns[_i].type, value), Date.parse(timestamps[idx])];
               });
               results.push({ target: target, datapoints: datapoints });
+            };
+
+            for (var _i = 1; _i < table.columns.length; _i++) {
+              _loop(_i);
             }
 
             return {
@@ -204,6 +205,14 @@ System.register([], function (_export, _context) {
       } : function (obj) {
         return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
       };
+
+      if (typeof window === 'undefined') {
+        req = require('atob');
+
+        atob = req.atob;
+      } else {
+        atob = window.atob;
+      }
 
       Datasource = function () {
         function Datasource(instanceSettings, $q, backendSrv, templateSrv) {

@@ -1,5 +1,5 @@
-import { Datasource, transformResponse } from '../src/datasource'
 import { expect } from 'chai'
+import { Datasource, transformResponse } from '../src/datasource'
 
 const fetch = require('node-fetch')
 const http = require('http')
@@ -57,7 +57,7 @@ const prepare = async () => {
   await prepare_data(token)
   const response = await query(
     token,
-    'select $timestamp, $table, double_col, int_col, timestamp_col from aaa;'
+    'select $timestamp, $table, blob_col, double_col, int_col, string_col, timestamp_col from aaa;'
   )
   const data = await response.json()
   var res = { data: data }
@@ -80,17 +80,33 @@ describe('Integration', () => {
             text: '$table'
           },
           {
+            text: 'blob_col'
+          },
+          {
             text: 'double_col'
           },
           {
             text: 'int_col'
           },
           {
+            text: 'string_col'
+          },
+          {
             text: 'timestamp_col',
             type: 'time'
           }
         ],
-        rows: [[Date.parse('2020-01-01'), 'aaa', 1.1, 1, Date.parse('2029-01-01')]],
+        rows: [
+          [
+            Date.parse('2020-01-01'),
+            'aaa',
+            'blob_value',
+            1.1,
+            1,
+            'string_value',
+            Date.parse('2029-01-01')
+          ]
+        ],
         type: 'table'
       }
     ])

@@ -1,17 +1,25 @@
-export function transformValue(value) {
-  if (typeof value == 'string') {
-    let d = Date.parse(value)
-    if (!isNaN(d)) {
-      return d
-    }
-    try {
-      let v = window.atob(value)
-      return v
-    } catch (error) {
+var atob
+if (typeof window === 'undefined') {
+  const req = require('atob')
+  atob = req.atob
+} else {
+  atob = window.atob
+}
+
+export function transformValue(column_type, value) {
+  switch (column_type) {
+    case 'timestamp':
+      return Date.parse(value)
+    case 'blob':
+      return atob(value)
+    case 'string':
+    case 'double':
+    case 'int64':
+    case 'count':
       return value
-    }
+    default:
+      throw 'unexpected column type: ' + column_type
   }
-  return value
 }
 
 export function transformResponse(response) {
@@ -28,13 +36,10 @@ export function transformResponse(response) {
       const rowCount = table.columns[0].data.length
       const columns = table.columns.map((c, i) => {
         let result = { text: c.name }
-        if (c.data.length > 0) {
-          let value = c.data[0]
-          if (typeof value == 'string') {
-            let d = Date.parse(value)
-            if (d >= maxDurationYear) {
-              result.type = 'time'
-            }
+        if (c.data.length > 0 && c.type == 'timestamp') {
+          let d = Date.parse(c.data[0])
+          if (d >= maxDurationYear) {
+            result.type = 'time'
           }
         }
         return result
@@ -44,7 +49,7 @@ export function transformResponse(response) {
         let row = []
         for (let j = 0; j < colCount; j++) {
           const value = table.columns[j].data[i]
-          row.push(transformValue(value))
+          row.push(transformValue(table.columns[j].type, value))
         }
         rows.push(row)
       }
@@ -66,7 +71,7 @@ export function transformResponse(response) {
       for (let i = 1; i < table.columns.length; i++) {
         const target = table.columns[i].name
         const datapoints = table.columns[i].data.map((value, idx) => [
-          transformValue(value),
+          transformValue(table.columns[i].type, value),
           Date.parse(timestamps[idx])
         ])
         results.push({ target, datapoints })

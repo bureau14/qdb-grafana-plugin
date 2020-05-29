@@ -44,7 +44,7 @@ If your cluster is not secured you just need to fill in the REST API URL (defaul
 
 ![Unsecured Configuration](https://doc.quasardb.net/master/_images/qdb_grafana_plugin_configuration_unsecured.png)
 
-If your cluster is secured make sure to use the secure REST API URL (default is [https://localhost:40493](https://localhost:40493)) when filling in the URL field.
+If your cluster is secured make sure to use the secure REST API URL (default is [https://localhost:40443](https://localhost:40443)) when filling in the URL field.
 
 ```
 Note:

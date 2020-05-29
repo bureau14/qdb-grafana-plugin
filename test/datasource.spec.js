@@ -1,7 +1,6 @@
 import Q from 'q'
 import { expect } from 'chai'
 import { regeneratorRuntime } from 'regenerator-runtime'
-
 import { Datasource, transformResponse } from '../src/datasource'
 
 describe('Datasource', function() {
@@ -71,15 +70,18 @@ describe('Datasource', function() {
                   '2019-03-25T12:47:52Z',
                   '2019-03-25T15:47:52Z'
                 ],
-                name: 'timestamp'
+                name: 'timestamp',
+                type: 'timestamp'
               },
               {
                 data: [1, 2, 3, 4, 5],
-                name: 'min(rate)'
+                name: 'min(rate)',
+                type: 'int64'
               },
               {
                 data: ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'],
-                name: 'max(amount)'
+                name: 'max(amount)',
+                type: 'int64'
               }
             ],
             name: 'orders.old.2y'
@@ -157,15 +159,18 @@ describe('Datasource', function() {
                   '1970-01-01T00:03:00Z',
                   '1970-01-01T00:04:00Z'
                 ],
-                name: 'timestamp'
+                name: 'timestamp',
+                type: 'timestamp'
               },
               {
                 data: [1, 2, 3, 4, 5],
-                name: 'min(rate)'
+                name: 'min(rate)',
+                type: 'int64'
               },
               {
                 data: ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'],
-                name: 'max(amount)'
+                name: 'max(amount)',
+                type: 'int64'
               }
             ],
             name: 'orders.old.2y'
@@ -235,7 +240,8 @@ describe('Datasource', function() {
                   '2019-03-25T12:47:52Z',
                   '2019-03-25T15:47:52Z'
                 ],
-                name: 'timestamp'
+                name: 'timestamp',
+                type: 'timestamp'
               },
               {
                 data: [
@@ -245,7 +251,8 @@ describe('Datasource', function() {
                   '2019-03-25T12:47:52Z',
                   '2019-03-25T15:47:52Z'
                 ],
-                name: 'reception'
+                name: 'reception',
+                type: 'timestamp'
               }
             ],
             name: 'orders.old.2y'
