@@ -3,7 +3,7 @@
 System.register([], function (_export, _context) {
   "use strict";
 
-  var _extends, _createClass, _typeof, atob, req, Datasource;
+  var _extends, _slicedToArray, _createClass, _typeof, atob, req, Datasource;
 
   function _asyncToGenerator(fn) {
     return function () {
@@ -78,6 +78,8 @@ System.register([], function (_export, _context) {
       case 'int64':
       case 'count':
         return value;
+      case 'none':
+        return null;
       default:
         throw 'unexpected column type: ' + column_type;
     }
@@ -182,6 +184,44 @@ System.register([], function (_export, _context) {
         return target;
       };
 
+      _slicedToArray = function () {
+        function sliceIterator(arr, i) {
+          var _arr = [];
+          var _n = true;
+          var _d = false;
+          var _e = undefined;
+
+          try {
+            for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+              _arr.push(_s.value);
+
+              if (i && _arr.length === i) break;
+            }
+          } catch (err) {
+            _d = true;
+            _e = err;
+          } finally {
+            try {
+              if (!_n && _i["return"]) _i["return"]();
+            } finally {
+              if (_d) throw _e;
+            }
+          }
+
+          return _arr;
+        }
+
+        return function (arr, i) {
+          if (Array.isArray(arr)) {
+            return arr;
+          } else if (Symbol.iterator in Object(arr)) {
+            return sliceIterator(arr, i);
+          } else {
+            throw new TypeError("Invalid attempt to destructure non-iterable instance");
+          }
+        };
+      }();
+
       _createClass = function () {
         function defineProperties(target, props) {
           for (var i = 0; i < props.length; i++) {
@@ -224,15 +264,48 @@ System.register([], function (_export, _context) {
             var query = _ref.query,
                 format = _ref.format;
 
-            return _this.backendSrv.datasourceRequest({
-              url: _this.url + '/api/query',
-              method: 'POST',
-              data: '{ "query" : "' + query + '" }',
-              headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _this.token }
-            }).then(function (result) {
-              result.data.format = format;
-              return result;
-            });
+            query = query.trim();
+            // show tags with regex filter
+            // query format: show tags where tag ~ <regex>
+            if (/^show\s+tags\s+where\s+tag\s+~\s+\S+$/i.test(query)) {
+              var _query$split = query.split(/\s+/),
+                  _query$split2 = _slicedToArray(_query$split, 6),
+                  regex = _query$split2[5];
+
+              return _this.backendSrv.datasourceRequest({
+                url: _this.url + '/api/tags',
+                method: 'GET',
+                params: { regex: regex },
+                headers: { Authorization: 'Bearer ' + _this.token }
+              }).then(function (result) {
+                result.data.format = format;
+                return result;
+              });
+            }
+            // show all tags
+            // query format: show tags
+            else if (/^show\s+tags$/i.test(query)) {
+                return _this.backendSrv.datasourceRequest({
+                  url: _this.url + '/api/tags',
+                  method: 'GET',
+                  headers: { Authorization: 'Bearer ' + _this.token }
+                }).then(function (result) {
+                  result.data.format = format;
+                  return result;
+                });
+              }
+              // default query
+              else {
+                  return _this.backendSrv.datasourceRequest({
+                    url: _this.url + '/api/query',
+                    method: 'POST',
+                    data: '{ "query" : "' + query + '" }',
+                    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _this.token }
+                  }).then(function (result) {
+                    result.data.format = format;
+                    return result;
+                  });
+                }
           };
 
           this.doQueries = function (queries) {
@@ -461,9 +534,61 @@ System.register([], function (_export, _context) {
           }
         }, {
           key: 'metricFindQuery',
-          value: function metricFindQuery(query) {
-            throw new Error('metrics not yet implemented.');
-          }
+          value: function () {
+            var _ref6 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(query) {
+              var response, result;
+              return regeneratorRuntime.wrap(function _callee4$(_context5) {
+                while (1) {
+                  switch (_context5.prev = _context5.next) {
+                    case 0:
+                      query = query.trim();
+                      // exit early if query is blank otherwise the server will return an invalid query error
+
+                      if (!(query == '')) {
+                        _context5.next = 3;
+                        break;
+                      }
+
+                      return _context5.abrupt('return', []);
+
+                    case 3:
+                      _context5.next = 5;
+                      return this.checkToken();
+
+                    case 5:
+                      _context5.next = 7;
+                      return this.doQuery({ query: query });
+
+                    case 7:
+                      response = _context5.sent;
+                      _context5.prev = 8;
+                      result = response.data.tables[0].columns[0].data.map(function (tag) {
+                        return { text: tag };
+                      });
+                      return _context5.abrupt('return', result);
+
+                    case 13:
+                      _context5.prev = 13;
+                      _context5.t0 = _context5['catch'](8);
+
+                      console.log(_context5.t0);
+                      console.log(response);
+                      throw Error('Unexpected metricFindQuery error. See console output for more information.');
+
+                    case 18:
+                    case 'end':
+                      return _context5.stop();
+                  }
+                }
+              }, _callee4, this, [[8, 13]]);
+            }));
+
+            function metricFindQuery(_x2) {
+              return _ref6.apply(this, arguments);
+            }
+
+            return metricFindQuery;
+          }()
         }, {
           key: 'testDatasource',
           value: function testDatasource() {
