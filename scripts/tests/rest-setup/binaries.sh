@@ -19,6 +19,11 @@ if [[ ${CMAKE_BUILD_TYPE} == "Debug" ]]; then
     QDB_REST="${QDB_REST}d"
 fi
 
+QDB_SHELL="${QDB_DIR}/qdbsh"
+if [[ ${CMAKE_BUILD_TYPE} == "Debug" ]]; then
+    QDB_SHELL="${QDB_SHELL}d"
+fi
+
 set -u
 
 case "$(uname)" in
@@ -30,8 +35,14 @@ case "$(uname)" in
 esac
 
 FOUND=0
+
 if [[ ! -f ${QDB_REST} ]]; then
     echo "Binary ${QDB_REST} not found."
+    FOUND=1
+fi
+
+if [[ ! -f ${QDB_SHELL} ]]; then
+    echo "Binary ${QDB_SHELL} not found."
     FOUND=1
 fi
 
