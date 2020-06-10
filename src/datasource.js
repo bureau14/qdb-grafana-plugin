@@ -17,6 +17,8 @@ export function transformValue(column_type, value) {
     case 'int64':
     case 'count':
       return value
+    case 'none':
+      return null
     default:
       throw 'unexpected column type: ' + column_type
   }
@@ -148,7 +150,40 @@ export default class Datasource {
   }
 
   doQuery = ({ query, format }) => {
-    return this.backendSrv
+    query = query.trim()
+    // show tags with regex filter
+    // query format: show tags where tag ~ <regex>
+    if (/^show\s+tags\s+where\s+tag\s+~\s+\S+$/i.test(query)) {
+      const [,,,,, regex] = query.split(/\s+/)
+      return this.backendSrv
+      .datasourceRequest({
+        url: `${this.url}/api/tags`,
+        method: 'GET',
+        params: { regex },
+        headers: { Authorization: `Bearer ${this.token}` }
+      })
+      .then(result => {
+        result.data.format = format
+        return result
+      })
+    } 
+    // show all tags
+    // query format: show tags
+    else if (/^show\s+tags$/i.test(query)) {
+      return this.backendSrv
+      .datasourceRequest({
+        url: `${this.url}/api/tags`,
+        method: 'GET',
+        headers: { Authorization: `Bearer ${this.token}` }
+      })
+      .then(result => {
+        result.data.format = format
+        return result
+      })
+    } 
+    // default query
+    else {
+      return this.backendSrv
       .datasourceRequest({
         url: `${this.url}/api/query`,
         method: 'POST',
@@ -159,6 +194,7 @@ export default class Datasource {
         result.data.format = format
         return result
       })
+    }
   }
 
   doQueries = queries => Promise.all(queries.map(this.doQuery))
@@ -221,8 +257,24 @@ export default class Datasource {
     throw new Error('annotations not yet implemented.')
   }
 
-  metricFindQuery(query) {
-    throw new Error('metrics not yet implemented.')
+  async metricFindQuery(query) {
+    query = query.trim()
+    // exit early if query is blank otherwise the server will return an invalid query error
+    if (query == '') {
+      return []
+    }
+
+    await this.checkToken()
+    const response = await this.doQuery({ query })
+
+    try {
+      const result = response.data.tables[0].columns[0].data.map(tag => ({ text: tag}))
+      return result
+    } catch (error) {
+      console.log(error)
+      console.log(response)
+      throw Error('Unexpected metricFindQuery error. See console output for more information.')
+    }
   }
 
   testDatasource() {

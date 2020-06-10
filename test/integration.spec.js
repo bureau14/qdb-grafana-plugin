@@ -1,5 +1,6 @@
 import { expect } from 'chai'
-import { Datasource, transformResponse } from '../src/datasource'
+import qs  from 'qs'
+import Datasource, { transformResponse } from '../src/datasource'
 
 const fetch = require('node-fetch')
 const http = require('http')
@@ -65,6 +66,45 @@ const prepare = async () => {
   return res
 }
 
+const testDatasource = (url) => {
+  let mockInstanceSettings = {
+    name: 'mockname',
+    id: 'mockid',
+    url,
+    jsonData : {
+      name: 'anonymous',
+      secret: '',
+      securityEnabled: false
+    }
+  }
+  let mock$Q = null
+  let mockBackendSrv = {
+    datasourceRequest: async ({ url, method, data = '', params = {}, headers = {}}) => {
+      let options = {
+        headers,
+        method,
+        mode: 'no-cors'
+      }
+
+      if (method != 'GET') {
+        options['body'] = data
+      }
+
+      let resp = await fetch(`${url}?${qs.stringify(params)}`, options)
+      let status = resp.status
+      let respData = await resp.json()
+
+      return {
+        status,
+        data: respData
+      }
+    }
+  }
+  let mockTemplateSrv = null
+
+  return new Datasource(mockInstanceSettings, mock$Q, mockBackendSrv, mockTemplateSrv)
+}
+
 describe('Integration', () => {
   it('should work with the rest api', async () => {
     const res = await prepare()
@@ -110,5 +150,20 @@ describe('Integration', () => {
         type: 'table'
       }
     ])
+  })
+})
+
+describe('Tag Queries', () => {
+  it('should fetch all the tags', async () => {
+    let ds = testDatasource('http://localhost:40080')
+    let result = await ds.metricFindQuery('show tags')
+    expect(result).to.deep.equal([ { text: 'tag_01' }, { text: 'tag_02' }, { text: 'tag_03' } ])
+  })
+
+
+  it('should filter the tags if a where clause is given', async () => {
+    let ds = testDatasource('http://localhost:40080')
+    let result = await ds.metricFindQuery('show tags where tag ~ tag_0[1|3]')
+    expect(result).to.deep.equal([ { text: 'tag_01' }, { text: 'tag_03' } ])
   })
 })
