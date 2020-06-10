@@ -10,6 +10,9 @@ source "$SCRIPT_DIR/cleanup.sh"
 kill_instances
 full_cleanup
 
+echo "qdbsh seeding"
+qdbsh_seed_db
+
 echo "qdb rest:"
 ARGS_REST=""
 qdb_rest_start "${ARGS_REST}" ${CONSOLE_LOG_REST} ${CONSOLE_ERR_LOG_REST}
