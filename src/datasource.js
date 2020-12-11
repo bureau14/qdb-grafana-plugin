@@ -13,6 +13,7 @@ export function transformValue(column_type, value) {
     case 'blob':
       return atob(value)
     case 'string':
+    case 'symbol':
     case 'double':
     case 'int64':
     case 'count':
@@ -154,46 +155,46 @@ export default class Datasource {
     // show tags with regex filter
     // query format: show tags where tag ~ <regex>
     if (/^show\s+tags\s+where\s+tag\s+~\s+\S+$/i.test(query)) {
-      const [,,,,, regex] = query.split(/\s+/)
+      const [, , , , , regex] = query.split(/\s+/)
       return this.backendSrv
-      .datasourceRequest({
-        url: `${this.url}/api/tags`,
-        method: 'GET',
-        params: { regex },
-        headers: { Authorization: `Bearer ${this.token}` }
-      })
-      .then(result => {
-        result.data.format = format
-        return result
-      })
-    } 
+        .datasourceRequest({
+          url: `${this.url}/api/tags`,
+          method: 'GET',
+          params: { regex },
+          headers: { Authorization: `Bearer ${this.token}` }
+        })
+        .then(result => {
+          result.data.format = format
+          return result
+        })
+    }
     // show all tags
     // query format: show tags
     else if (/^show\s+tags$/i.test(query)) {
       return this.backendSrv
-      .datasourceRequest({
-        url: `${this.url}/api/tags`,
-        method: 'GET',
-        headers: { Authorization: `Bearer ${this.token}` }
-      })
-      .then(result => {
-        result.data.format = format
-        return result
-      })
-    } 
+        .datasourceRequest({
+          url: `${this.url}/api/tags`,
+          method: 'GET',
+          headers: { Authorization: `Bearer ${this.token}` }
+        })
+        .then(result => {
+          result.data.format = format
+          return result
+        })
+    }
     // default query
     else {
       return this.backendSrv
-      .datasourceRequest({
-        url: `${this.url}/api/query`,
-        method: 'POST',
-        data: `{ "query" : "${query}" }`,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` }
-      })
-      .then(result => {
-        result.data.format = format
-        return result
-      })
+        .datasourceRequest({
+          url: `${this.url}/api/query`,
+          method: 'POST',
+          data: `{ "query" : "${query}" }`,
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.token}` }
+        })
+        .then(result => {
+          result.data.format = format
+          return result
+        })
     }
   }
 
@@ -268,7 +269,7 @@ export default class Datasource {
     const response = await this.doQuery({ query })
 
     try {
-      const result = response.data.tables[0].columns[0].data.map(tag => ({ text: tag}))
+      const result = response.data.tables[0].columns[0].data.map(tag => ({ text: tag }))
       return result
     } catch (error) {
       console.log(error)
