@@ -107,6 +107,7 @@ System.register([], function (_export, _context) {
       case 'blob':
         return atob(value);
       case 'string':
+      case 'symbol':
       case 'double':
       case 'int64':
       case 'count':
@@ -522,9 +523,13 @@ System.register([], function (_export, _context) {
                 return dv.name === variableName;
               });
 
+              // we only consider multi variables
               if (dashVar && dashVar.multi) {
+                // ensure the current value is always an array when multi is true
+                // sometimes (rarely) it seems to come through as a string
                 var value = dashVar.current.value || [];
                 value = Array.isArray(value) ? value : [value];
+
                 return {
                   fullName: fullVariableName,
                   name: variableName,
@@ -541,11 +546,11 @@ System.register([], function (_export, _context) {
         }, {
           key: 'renderMacroTemplate',
           value: function renderMacroTemplate(template, join) {
+            // we only want macros that have a value
             var macroVariables = this.extractMacroVariables(template).filter(function (m) {
               return !!m.value;
             });
             // all macrovariables value array length should be the same
-            console.log('macroVariables', macroVariables);
             var result = [];
             for (var i = 0; i < macroVariables[0].value.length; i++) {
               var resultTemplate = template;
