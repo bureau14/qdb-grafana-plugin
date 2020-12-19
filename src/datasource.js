@@ -6,6 +6,42 @@ if (typeof window === 'undefined') {
   atob = window.atob
 }
 
+// This is taken from https://github.com/grafana/grafana/blob/master/public/app/features/variables/utils.ts#L16
+const variableRegex = /\$(\w+)|\[\[([\s\S]+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g
+
+function extractMacrosFunction(query, macro) {
+  const macroStart = `${macro}(`
+
+  let fromIndex = 0
+  let matchIndex = query.indexOf(macroStart, fromIndex)
+  let matches = []
+  
+  while (matchIndex != -1) {
+    let stack = []
+    const startIndex = matchIndex + macroStart.length
+    for (let i = startIndex; i < query.length; i++) {
+      const ch = query.charAt(i)
+      if (ch === '(') {
+        stack.push(ch)
+      } else if (ch === ')') {
+        if (stack.length) {
+          stack.pop()
+        } else {
+          matches.push({ 
+            start: matchIndex,
+            end: i,
+            template: query.substring(startIndex, i).trim() 
+          })
+          fromIndex = i
+          break
+        }
+      }
+    }
+    matchIndex = query.indexOf(macroStart, fromIndex)
+  }
+  return matches
+}
+
 export function transformValue(column_type, value) {
   switch (column_type) {
     case 'timestamp':
@@ -232,6 +268,86 @@ export default class Datasource {
     }
   }
 
+  extractMacroVariables(template) {
+    const dashVars = this.templateSrv.getVariables()
+    const macroVariables = Array.from(template.matchAll(variableRegex))
+    return macroVariables.map(match => {
+      const fullVariableName = match[0]
+      let variableName
+      for (let i = 1; i < match.length; i++) {
+        variableName = match[i]
+        if (variableName) {
+          break
+        }
+      }
+      const dashVar = dashVars.find(dv => dv.name === variableName)
+
+      // we only consider multi variables
+      if (dashVar && dashVar.multi) {
+        // ensure the current value is always an array when multi is true
+        // sometimes (rarely) it seems to come through as a string
+        let value = dashVar.current.value || []
+        value = Array.isArray(value) ? value : [value]
+
+        return {
+          fullName: fullVariableName,
+          name: variableName,
+          value: value
+        } 
+      }
+
+      return {
+        fullName: fullVariableName,
+        name: variableName
+      } 
+    })
+  }
+
+  renderMacroTemplate(template, join) {
+    // we only want macros that have a value
+    let macroVariables = this.extractMacroVariables(template).filter(m => !!m.value)
+    // all macrovariables value array length should be the same
+    let result = []
+    for (let i = 0; i < macroVariables[0].value.length; i++) {
+      let resultTemplate = template
+      for (let j = 0; j < macroVariables.length; j++) {
+        resultTemplate = resultTemplate.replaceAll(macroVariables[j].fullName, macroVariables[j].value[i])
+      }
+      result.push(resultTemplate)
+    }
+    return result.join(join)
+  }
+
+  buildQueryTemplate(sql, variables) {
+    let commaMacros = extractMacrosFunction(sql, '$__comma')
+    if (commaMacros.length) {
+      sql = commaMacros.reduce((query, macro) => {
+        const template = this.renderMacroTemplate(macro.template, ', ')
+        return query.substring(0, macro.start) + template + query.substring(macro.end + 1)
+      }, sql)
+    }
+
+    let orMacros = extractMacrosFunction(sql, '$__or')
+    if (orMacros.length) {
+      sql = orMacros.reduce((query, macro) => {
+        const template = this.renderMacroTemplate(macro.template, ' OR ')
+        return query.substring(0, macro.start) + template + query.substring(macro.end + 1)
+      }, sql)
+    }
+
+    let andMacros = extractMacrosFunction(sql, '$__and')
+    if (andMacros.length) {
+      sql = andMacros.reduce((query, macro) => {
+        const template = this.renderMacroTemplate(macro.template, ' AND ')
+        return query.substring(0, macro.start) + template + query.substring(macro.end + 1)
+      }, sql)
+    }
+
+    const result = this.templateSrv.replace(sql, variables)
+    console.log(result)
+    return result
+  }
+
   async query(options) {
     const variables = this.getVariables(options)
 
@@ -240,7 +356,7 @@ export default class Datasource {
       .map(t => {
         return {
           format: t.resultFormat,
-          query: this.templateSrv.replace(t.rawSql, variables)
+          query: this.buildQueryTemplate(t.rawSql, variables)
         }
       })
 

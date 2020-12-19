@@ -3,7 +3,7 @@
 System.register([], function (_export, _context) {
   "use strict";
 
-  var _extends, _slicedToArray, _createClass, _typeof, atob, req, Datasource;
+  var _extends, _slicedToArray, _createClass, _typeof, atob, req, variableRegex, Datasource;
 
   function _asyncToGenerator(fn) {
     return function () {
@@ -67,6 +67,39 @@ System.register([], function (_export, _context) {
     }
   }
 
+  function extractMacrosFunction(query, macro) {
+    var macroStart = macro + '(';
+
+    var fromIndex = 0;
+    var matchIndex = query.indexOf(macroStart, fromIndex);
+    var matches = [];
+
+    while (matchIndex != -1) {
+      var stack = [];
+      var startIndex = matchIndex + macroStart.length;
+      for (var i = startIndex; i < query.length; i++) {
+        var ch = query.charAt(i);
+        if (ch === '(') {
+          stack.push(ch);
+        } else if (ch === ')') {
+          if (stack.length) {
+            stack.pop();
+          } else {
+            matches.push({
+              start: matchIndex,
+              end: i,
+              template: query.substring(startIndex, i).trim()
+            });
+            fromIndex = i;
+            break;
+          }
+        }
+      }
+      matchIndex = query.indexOf(macroStart, fromIndex);
+    }
+    return matches;
+  }
+
   function transformValue(column_type, value) {
     switch (column_type) {
       case 'timestamp':
@@ -74,6 +107,7 @@ System.register([], function (_export, _context) {
       case 'blob':
         return atob(value);
       case 'string':
+      case 'symbol':
       case 'double':
       case 'int64':
       case 'count':
@@ -253,6 +287,9 @@ System.register([], function (_export, _context) {
       } else {
         atob = window.atob;
       }
+
+      // This is taken from https://github.com/grafana/grafana/blob/master/public/app/features/variables/utils.ts#L16
+      variableRegex = /\$(\w+)|\[\[([\s\S]+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
 
       Datasource = function () {
         function Datasource(instanceSettings, $q, backendSrv, templateSrv) {
@@ -469,10 +506,99 @@ System.register([], function (_export, _context) {
             return checkToken;
           }()
         }, {
+          key: 'extractMacroVariables',
+          value: function extractMacroVariables(template) {
+            var dashVars = this.templateSrv.getVariables();
+            var macroVariables = Array.from(template.matchAll(variableRegex));
+            return macroVariables.map(function (match) {
+              var fullVariableName = match[0];
+              var variableName = void 0;
+              for (var i = 1; i < match.length; i++) {
+                variableName = match[i];
+                if (variableName) {
+                  break;
+                }
+              }
+              var dashVar = dashVars.find(function (dv) {
+                return dv.name === variableName;
+              });
+
+              // we only consider multi variables
+              if (dashVar && dashVar.multi) {
+                // ensure the current value is always an array when multi is true
+                // sometimes (rarely) it seems to come through as a string
+                var value = dashVar.current.value || [];
+                value = Array.isArray(value) ? value : [value];
+
+                return {
+                  fullName: fullVariableName,
+                  name: variableName,
+                  value: value
+                };
+              }
+
+              return {
+                fullName: fullVariableName,
+                name: variableName
+              };
+            });
+          }
+        }, {
+          key: 'renderMacroTemplate',
+          value: function renderMacroTemplate(template, join) {
+            // we only want macros that have a value
+            var macroVariables = this.extractMacroVariables(template).filter(function (m) {
+              return !!m.value;
+            });
+            // all macrovariables value array length should be the same
+            var result = [];
+            for (var i = 0; i < macroVariables[0].value.length; i++) {
+              var resultTemplate = template;
+              for (var j = 0; j < macroVariables.length; j++) {
+                resultTemplate = resultTemplate.replaceAll(macroVariables[j].fullName, macroVariables[j].value[i]);
+              }
+              result.push(resultTemplate);
+            }
+            return result.join(join);
+          }
+        }, {
+          key: 'buildQueryTemplate',
+          value: function buildQueryTemplate(sql, variables) {
+            var _this2 = this;
+
+            var commaMacros = extractMacrosFunction(sql, '$__comma');
+            if (commaMacros.length) {
+              sql = commaMacros.reduce(function (query, macro) {
+                var template = _this2.renderMacroTemplate(macro.template, ', ');
+                return query.substring(0, macro.start) + template + query.substring(macro.end + 1);
+              }, sql);
+            }
+
+            var orMacros = extractMacrosFunction(sql, '$__or');
+            if (orMacros.length) {
+              sql = orMacros.reduce(function (query, macro) {
+                var template = _this2.renderMacroTemplate(macro.template, ' OR ');
+                return query.substring(0, macro.start) + template + query.substring(macro.end + 1);
+              }, sql);
+            }
+
+            var andMacros = extractMacrosFunction(sql, '$__and');
+            if (andMacros.length) {
+              sql = andMacros.reduce(function (query, macro) {
+                var template = _this2.renderMacroTemplate(macro.template, ' AND ');
+                return query.substring(0, macro.start) + template + query.substring(macro.end + 1);
+              }, sql);
+            }
+
+            var result = this.templateSrv.replace(sql, variables);
+            console.log(result);
+            return result;
+          }
+        }, {
           key: 'query',
           value: function () {
             var _ref5 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(options) {
-              var _this2 = this;
+              var _this3 = this;
 
               var variables, queries, results, transformedResults;
               return regeneratorRuntime.wrap(function _callee3$(_context4) {
@@ -485,7 +611,7 @@ System.register([], function (_export, _context) {
                       }).map(function (t) {
                         return {
                           format: t.resultFormat,
-                          query: _this2.templateSrv.replace(t.rawSql, variables)
+                          query: _this3.buildQueryTemplate(t.rawSql, variables)
                         };
                       });
 
