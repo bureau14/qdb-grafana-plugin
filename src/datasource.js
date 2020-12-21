@@ -9,7 +9,7 @@ if (typeof window === 'undefined') {
 // This is taken from https://github.com/grafana/grafana/blob/master/public/app/features/variables/utils.ts#L16
 const variableRegex = /\$(\w+)|\[\[([\s\S]+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g
 
-function extractMacrosFunction(query, macro) {
+export function extractMacrosFunction(query, macro) {
   const macroStart = `${macro}(`
 
   let fromIndex = 0

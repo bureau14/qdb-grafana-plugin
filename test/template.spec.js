@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { extractAndMacros, extractOrMacros } from '../src/datasource'
+import { extractMacrosFunction } from '../src/datasource'
 
 const query = `
 select 
@@ -19,7 +19,7 @@ where
 describe('templating', () => {
   describe('parse macros', () => {
     it('should extract $__and() macros', () => {
-      expect(extractAndMacros(query)).to.deep.eq(
+      expect(extractMacrosFunction(query, '$__and')).to.deep.eq(
         [
           { 
             start: 39,
@@ -31,7 +31,7 @@ describe('templating', () => {
     })
 
     it('should extract $__or() macros', () => {
-      expect(extractOrMacros(query)).to.deep.eq(
+      expect(extractMacrosFunction(query, '$__or')).to.deep.eq(
         [
           {
             start: 145,
