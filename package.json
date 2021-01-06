@@ -1,6 +1,6 @@
 {
   "name": "qdb-grafana-datasource",
-  "version": "3.8.10",
+  "version": "3.8.11",
   "description": "QuasarDB datasource for Grafana",
   "main": "src/module.js",
   "author": "Mike Jackson <mike@quasardb.net>",
