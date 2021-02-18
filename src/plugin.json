@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
+  "type": "datasource",
+  "name": "qdb-grafana-backend-plugin",
+  "id": "quasardb-qdb-grafana-backend-plugin",
+  "metrics": true,
+  "backend": true,
+  "executable": "gpx_qdb-grafana-backend-plugin",
+  "info": {
+    "description": "Qdb Grafana Backend Plugin",
+    "author": {
+      "name": "quasardb",
+      "url": "https://quasardb.net"
+    },
+    "keywords": [
+      "quasardb",
+      "backend"
+    ],
+    "logos": {
+      "small": "img/logo.svg",
+      "large": "img/logo.svg"
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/grafana/grafana-starter-datasource-backend"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/grafana/grafana-starter-datasource-backend/blob/master/LICENSE"
+      }
+    ],
+    "screenshots": [],
+    "version": "%VERSION%",
+    "updated": "%TODAY%"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=7.0.0",
+    "plugins": []
+  }
+}
