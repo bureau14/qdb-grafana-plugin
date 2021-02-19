@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"math/rand"
-	"net/http"
 	"time"
+	
+	quasardb "github.com/bureau14/qdb-api-go"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -120,16 +121,53 @@ func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 }
 
 type instanceSettings struct {
-	httpClient *http.Client
+	handle *quasardb.HandleType
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+	type editModel struct {
+        URI string `json:"uri"`
+    }
+    var model editModel
+    err := json.Unmarshal(setting.JSONData, &model)
+    if err != nil {
+        log.DefaultLogger.Warn("error marshalling", "err", err)
+        return nil, err
+    }
+	var secureData = setting.DecryptedSecureJSONData
+    username, hasUsername := secureData["username"]
+    userPrivateKey, hasUserPrivateKey := secureData["user_private_key"]
+    clusterPublicKey, hasClusterPublicKey := secureData["cluster_public_key"]
+	
+	handle, err := quasardb.NewHandle()
+	if err != nil {
+		return nil, err
+	}
+
+	if hasUsername && hasUserPrivateKey {
+		if hasClusterPublicKey {
+			// Set encryption if enabled server side
+			err = handle.SetEncryption(quasardb.EncryptNone)
+
+			// add security if enabled server side
+			err = handle.AddClusterPublicKey(clusterPublicKey)
+			err = handle.AddUserCredentials(username, userPrivateKey)
+		} else {
+			log.Printf("Warning: cannot connect user %s , cluster is not secured.", username)
+			return nil, err
+		}
+	}
+	
+	err = handle.Connect(model.URI)
+	if err != nil {
+        return nil, err
+	}
+
 	return &instanceSettings{
-		httpClient: &http.Client{},
+		handle: &handle,
 	}, nil
 }
 
 func (s *instanceSettings) Dispose() {
-	// Called before creatinga a new instance to allow plugin authors
-	// to cleanup.
+	s.handle.Close()
 }

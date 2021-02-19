@@ -1,7 +1,7 @@
 import React, { ChangeEvent, PureComponent } from 'react';
 import { LegacyForms } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { MyDataSourceOptions, MySecureJsonData } from './types';
+import { MyDataSourceOptions, SecureJsonData } from './types';
 
 const { SecretFormField, FormField } = LegacyForms;
 
@@ -10,37 +10,86 @@ interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> 
 interface State {}
 
 export class ConfigEditor extends PureComponent<Props, State> {
-  onPathChange = (event: ChangeEvent<HTMLInputElement>) => {
+  onURIChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     const jsonData = {
       ...options.jsonData,
-      path: event.target.value,
+      uri: event.target.value,
     };
     onOptionsChange({ ...options, jsonData });
   };
-
-  // Secure field (only sent to the backend)
-  onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+  onUsernameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     onOptionsChange({
       ...options,
       secureJsonData: {
-        apiKey: event.target.value,
+        ...options.secureJsonData,
+        username: event.target.value,
+      },
+    });
+  };
+  // Secure field (only sent to the backend)
+  onUserPrivateKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({
+      ...options,
+      secureJsonData: {
+        ...options.secureJsonData,
+        user_private_key: event.target.value,
+      },
+    });
+  };
+  // Secure field (only sent to the backend)
+  onClusterPublicKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({
+      ...options,
+      secureJsonData: {
+        ...options.secureJsonData,
+        cluster_public_key: event.target.value,
       },
     });
   };
 
-  onResetAPIKey = () => {
+  onResetUsername = () => {
     const { onOptionsChange, options } = this.props;
     onOptionsChange({
       ...options,
       secureJsonFields: {
         ...options.secureJsonFields,
-        apiKey: false,
+        username: false,
       },
       secureJsonData: {
         ...options.secureJsonData,
-        apiKey: '',
+        username: '',
+      },
+    });
+  };
+  onResetUserPrivateKey = () => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({
+      ...options,
+      secureJsonFields: {
+        ...options.secureJsonFields,
+        user_private_key: false,
+      },
+      secureJsonData: {
+        ...options.secureJsonData,
+        user_private_key: '',
+      },
+    });
+  };
+  onResetClusterPublicKey = () => {
+    const { onOptionsChange, options } = this.props;
+    onOptionsChange({
+      ...options,
+      secureJsonFields: {
+        ...options.secureJsonFields,
+        cluster_public_key: false,
+      },
+      secureJsonData: {
+        ...options.secureJsonData,
+        cluster_public_key: '',
       },
     });
   };
@@ -48,32 +97,59 @@ export class ConfigEditor extends PureComponent<Props, State> {
   render() {
     const { options } = this.props;
     const { jsonData, secureJsonFields } = options;
-    const secureJsonData = (options.secureJsonData || {}) as MySecureJsonData;
+    const secureJsonData = (options.secureJsonData || {}) as SecureJsonData;
 
     return (
       <div className="gf-form-group">
         <div className="gf-form">
           <FormField
-            label="Path"
+            label="URI"
             labelWidth={6}
             inputWidth={20}
-            onChange={this.onPathChange}
-            value={jsonData.path || ''}
-            placeholder="json field returned to frontend"
+            onChange={this.onURIChange}
+            value={jsonData.uri || ''}
+            placeholder="A quasardb URI"
+          />
+        </div>
+        <div className="gf-form">
+          <SecretFormField
+            isConfigured={(secureJsonFields && secureJsonFields.username) as boolean}
+            label="Username"
+            labelWidth={6}
+            inputWidth={20}
+            onChange={this.onUsernameChange}
+            value={secureJsonData.username || ''}
+            onReset={this.onResetUsername}
+            placeholder="User"
           />
         </div>
 
         <div className="gf-form-inline">
           <div className="gf-form">
             <SecretFormField
-              isConfigured={(secureJsonFields && secureJsonFields.apiKey) as boolean}
-              value={secureJsonData.apiKey || ''}
-              label="API Key"
-              placeholder="secure json field (backend only)"
+              isConfigured={(secureJsonFields && secureJsonFields.user_private_key) as boolean}
+              value={secureJsonData.user_private_key || ''}
+              label="user private key"
+              placeholder="User Private Key"
               labelWidth={6}
               inputWidth={20}
-              onReset={this.onResetAPIKey}
-              onChange={this.onAPIKeyChange}
+              onReset={this.onResetUserPrivateKey}
+              onChange={this.onUserPrivateKeyChange}
+            />
+          </div>
+        </div>
+
+        <div className="gf-form-inline">
+          <div className="gf-form">
+            <SecretFormField
+              isConfigured={(secureJsonFields && secureJsonFields.cluster_public_key) as boolean}
+              value={secureJsonData.cluster_public_key || ''}
+              label="user private key"
+              placeholder="User Private Key"
+              labelWidth={6}
+              inputWidth={20}
+              onReset={this.onResetClusterPublicKey}
+              onChange={this.onClusterPublicKeyChange}
             />
           </div>
         </div>
