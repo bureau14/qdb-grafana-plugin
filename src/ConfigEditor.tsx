@@ -10,11 +10,11 @@ interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> 
 interface State {}
 
 export class ConfigEditor extends PureComponent<Props, State> {
-  onURIChange = (event: ChangeEvent<HTMLInputElement>) => {
+  onHostChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     const jsonData = {
       ...options.jsonData,
-      uri: event.target.value,
+      host: event.target.value,
     };
     onOptionsChange({ ...options, jsonData });
   };
@@ -36,17 +36,6 @@ export class ConfigEditor extends PureComponent<Props, State> {
       secureJsonData: {
         ...options.secureJsonData,
         user_private_key: event.target.value,
-      },
-    });
-  };
-  // Secure field (only sent to the backend)
-  onClusterPublicKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { onOptionsChange, options } = this.props;
-    onOptionsChange({
-      ...options,
-      secureJsonData: {
-        ...options.secureJsonData,
-        cluster_public_key: event.target.value,
       },
     });
   };
@@ -79,20 +68,6 @@ export class ConfigEditor extends PureComponent<Props, State> {
       },
     });
   };
-  onResetClusterPublicKey = () => {
-    const { onOptionsChange, options } = this.props;
-    onOptionsChange({
-      ...options,
-      secureJsonFields: {
-        ...options.secureJsonFields,
-        cluster_public_key: false,
-      },
-      secureJsonData: {
-        ...options.secureJsonData,
-        cluster_public_key: '',
-      },
-    });
-  };
 
   render() {
     const { options } = this.props;
@@ -103,12 +78,12 @@ export class ConfigEditor extends PureComponent<Props, State> {
       <div className="gf-form-group">
         <div className="gf-form">
           <FormField
-            label="URI"
+            label="Host"
             labelWidth={6}
             inputWidth={20}
-            onChange={this.onURIChange}
-            value={jsonData.uri || ''}
-            placeholder="A quasardb URI"
+            onChange={this.onHostChange}
+            value={jsonData.host || ''}
+            placeholder="A host ip address"
           />
         </div>
         <div className="gf-form">
@@ -129,27 +104,12 @@ export class ConfigEditor extends PureComponent<Props, State> {
             <SecretFormField
               isConfigured={(secureJsonFields && secureJsonFields.user_private_key) as boolean}
               value={secureJsonData.user_private_key || ''}
-              label="user private key"
-              placeholder="User Private Key"
+              label="User Key"
+              placeholder="User Key"
               labelWidth={6}
               inputWidth={20}
               onReset={this.onResetUserPrivateKey}
               onChange={this.onUserPrivateKeyChange}
-            />
-          </div>
-        </div>
-
-        <div className="gf-form-inline">
-          <div className="gf-form">
-            <SecretFormField
-              isConfigured={(secureJsonFields && secureJsonFields.cluster_public_key) as boolean}
-              value={secureJsonData.cluster_public_key || ''}
-              label="user private key"
-              placeholder="User Private Key"
-              labelWidth={6}
-              inputWidth={20}
-              onReset={this.onResetClusterPublicKey}
-              onChange={this.onClusterPublicKeyChange}
             />
           </div>
         </div>

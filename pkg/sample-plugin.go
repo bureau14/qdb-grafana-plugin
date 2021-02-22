@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"math/rand"
+	"fmt"
 	"time"
-	
-	quasardb "github.com/bureau14/qdb-api-go"
+    "bytes"
+    "io/ioutil"
+	"net/http"
+	"strconv"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -40,6 +42,40 @@ type SampleDatasource struct {
 	im instancemgmt.InstanceManager
 }
 
+type QdbToken struct {
+	// token
+	Token string `json:"token,omitempty"`
+}
+
+type QdbCredential struct {
+	SecretKey string `json:"secret_key,omitempty"`
+	Username string `json:"username,omitempty"`
+}
+
+type QdbQuery struct {
+	Query string `json:"query,omitempty"`
+}
+
+type QueryResult struct {
+	Tables []*QueryTable `json:"tables"`
+}
+
+type QueryColumn struct {
+	Data []interface{} `json:"data"`
+	Name string `json:"name,omitempty"`
+	Type string `json:"type,omitempty"`
+}
+
+type QueryTable struct {
+	Columns []*QueryColumn `json:"columns"`
+	Name string `json:"name,omitempty"`
+}
+
+type queryModel struct {
+	Format string `json:"format"`
+	QueryText string `json:"queryText"`
+}
+
 // QueryData handles multiple queries and returns multiple responses.
 // req contains the queries []DataQuery (where each query contains RefID as a unique identifer).
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
@@ -47,58 +83,233 @@ type SampleDatasource struct {
 func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
 	log.DefaultLogger.Info("QueryData", "request", req)
 
+	log.DefaultLogger.Info(fmt.Sprintf("----------- QueryData -----------"))
 	// create response struct
 	response := backend.NewQueryDataResponse()
+	
+	instance, err := td.im.Get(req.PluginContext)
+	if err != nil {
+		return nil, err
+	}
+	instSetting, _ := instance.(*instanceSettings)
+	
+	host := instSetting.host
+	if host == "" {
+		return nil, fmt.Errorf("Host cannot be empty")
+	}
+
+	credential := instSetting.credential
+    loginRequest, err := json.Marshal(credential)
+    loginResponse, err := http.Post(fmt.Sprintf("%s/api/login", host), "application/json; charset=utf-8", bytes.NewBuffer(loginRequest))
+	if err != nil {
+		return nil, err
+    }
+    defer loginResponse.Body.Close()
+    bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+	
+    var t QdbToken
+    json.Unmarshal(bodyBytes, &t)
+	token := t.Token
+	log.DefaultLogger.Info(fmt.Sprintf("token: %s", token))
 
 	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
-		res := td.query(ctx, q)
+		res, err := td.query(ctx, q, host, token)
+		if err != nil {
+			return nil, err
+		}
 
 		// save the response in a hashmap
 		// based on with RefID as identifier
-		response.Responses[q.RefID] = res
+		response.Responses[q.RefID] = *res
 	}
 
 	return response, nil
 }
 
-type queryModel struct {
-	Format string `json:"format"`
+func convertTimestampColumn(data []interface{}) ([]*time.Time, error) {
+	out := []*time.Time{}
+	layout := "2006-01-02T15:04:05.999999999Z07:00"
+	for _, d := range data {
+		switch v := d.(type) {
+		case string:
+			if v == "(void)" {
+				out = append(out, nil)
+			} else {
+				val, err := time.Parse(layout, v)
+				if err != nil {
+					return nil, err
+				}
+				out = append(out, &val)
+			}
+		default:
+			out = append(out, nil)
+		}
+	}
+	return out, nil
 }
 
-func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery) backend.DataResponse {
+func convertInt64Column(data []interface{}) ([]*int64, error) {
+	out := []*int64{}
+	for _, d := range data {
+		switch v := d.(type) {
+		case string:
+			if v == "(undefined)" {
+				out = append(out, nil)
+			} else {
+				val, err := strconv.ParseInt(v, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+				out = append(out, &val)
+			}
+		case float64:
+			val := int64(v)
+			out = append(out, &val)
+		case int64:
+			out = append(out, &v)
+		default:
+			out = append(out, nil)
+		}
+	}
+	return out, nil
+}
+
+func convertDoubleColumn(data []interface{}) ([]*float64, error) {
+	out := []*float64{}
+	for _, d := range data {
+		switch v := d.(type) {
+		case string:
+			val, err := strconv.ParseFloat(v, 64)
+			if err != nil {
+				return nil, err
+			}
+			out = append(out, &val)
+		case float64:
+			out = append(out, &v)
+		case int64:
+			val := float64(v)
+			out = append(out, &val)
+		default:
+			out = append(out, nil)
+		}
+	}
+	return out, nil
+}
+
+func convertBlobLikeColumn(data []interface{}) ([]*string, error) {
+	out := []*string{}
+	for _, d := range data {
+		switch v := d.(type) {
+		case string:
+			out = append(out, &v)
+		default:
+			out = append(out, nil)
+		}
+	}
+	return out, nil
+}
+
+func convertValues(column *QueryColumn) (interface{}, error) {
+	switch t := column.Type; t {
+		case "timestamp":
+			return convertTimestampColumn(column.Data)
+		case "int64", "count":
+			return convertInt64Column(column.Data)
+		case "double":
+			return convertDoubleColumn(column.Data)
+		case "blob", "string", "symbol":
+			return convertBlobLikeColumn(column.Data)
+		default:
+			return []*string{}, nil
+	}
+}
+
+// func getType(column *QueryColumn) data.FieldType {	
+// 	switch t := column.Type; t {
+// 		case "timestamp":
+// 			return data.FieldTypeNullableTime
+// 		case "int64", "count":
+// 			return data.FieldTypeNullableInt64
+// 		case "double":
+// 			return data.FieldTypeNullableFloat64
+// 		case "blob", "string", "symbol":
+// 			return data.FieldTypeNullableString
+// 		default:
+// 			return data.FieldTypeNullableString
+// 	}
+// }
+
+func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, host string, token string) (*backend.DataResponse, error) {
 	// Unmarshal the json into our queryModel
 	var qm queryModel
+	
+	log.DefaultLogger.Info(fmt.Sprintf("----------- query -----------"))
 
 	response := backend.DataResponse{}
 
 	response.Error = json.Unmarshal(query.JSON, &qm)
 	if response.Error != nil {
-		return response
+		return nil, response.Error
 	}
+
+	q := QdbQuery{
+		Query: qm.QueryText,
+	}
+	log.DefaultLogger.Info(fmt.Sprintf("Query text: %s", q.Query))
+
 
 	// Log a warning if `Format` is empty.
 	if qm.Format == "" {
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
+	if q.Query == "" {
+		return nil, fmt.Errorf("query cannot be empty.")
+	}
+
+    queryRequest, err := json.Marshal(q)
+    req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/query", host), bytes.NewBuffer(queryRequest))
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+    client := &http.Client{}
+    queryResponse, err := client.Do(req)
+    if err != nil {
+		return nil, err
+    }
+    defer queryResponse.Body.Close()
+    bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
+
+    var queryRes QueryResult
+    json.Unmarshal(bodyBytes, &queryRes)
+
+	if len(queryRes.Tables) == 0 {
+		return nil, fmt.Errorf("No results")
+	}
+
+	if len(queryRes.Tables) > 1 {
+		return nil, fmt.Errorf("Multiple tables result are not supported at this time.")
+	}
 
 	// create data frame response
 	frame := data.NewFrame("response")
 
-	// add the time dimension
-	frame.Fields = append(frame.Fields,
-		data.NewField("time", nil, []time.Time{query.TimeRange.From, query.TimeRange.To}),
-	)
+	table := queryRes.Tables[0]
+	for _, column := range table.Columns {
+		values, err := convertValues(column)
+		if err != nil {
+			return nil, err
+		}
+		log.DefaultLogger.Info(fmt.Sprintf("values: %v", values))
 
-	// add values
-	frame.Fields = append(frame.Fields,
-		data.NewField("values", nil, []int64{10, 20}),
-	)
+		frame.Fields = append(frame.Fields,
+			data.NewField(column.Name, nil, values),
+		)
+	}
 
 	// add the frames to the response
 	response.Frames = append(response.Frames, frame)
 
-	return response
+	return &response, nil
 }
 
 // CheckHealth handles health checks sent from Grafana to the plugin.
@@ -109,11 +320,6 @@ func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 	var status = backend.HealthStatusOk
 	var message = "Data source is working"
 
-	if rand.Int()%2 == 0 {
-		status = backend.HealthStatusError
-		message = "randomized error"
-	}
-
 	return &backend.CheckHealthResult{
 		Status:  status,
 		Message: message,
@@ -121,53 +327,41 @@ func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 }
 
 type instanceSettings struct {
-	handle *quasardb.HandleType
+	host string
+	credential QdbCredential
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-	type editModel struct {
-        URI string `json:"uri"`
+    type editModel struct {
+        Host string `json:"host"`
     }
-    var model editModel
-    err := json.Unmarshal(setting.JSONData, &model)
+
+    var hosts editModel
+    err := json.Unmarshal(setting.JSONData, &hosts)
     if err != nil {
         log.DefaultLogger.Warn("error marshalling", "err", err)
         return nil, err
     }
+
 	var secureData = setting.DecryptedSecureJSONData
-    username, hasUsername := secureData["username"]
-    userPrivateKey, hasUserPrivateKey := secureData["user_private_key"]
-    clusterPublicKey, hasClusterPublicKey := secureData["cluster_public_key"]
+    username, _ := secureData["username"]
+    userPrivateKey, _ := secureData["user_private_key"]
 	
-	handle, err := quasardb.NewHandle()
-	if err != nil {
-		return nil, err
+	log.DefaultLogger.Info(fmt.Sprintf("username: %s", username))
+	log.DefaultLogger.Info(fmt.Sprintf("user private key: %s", userPrivateKey))
+
+	credential := QdbCredential{
+		Username: username,
+		SecretKey: userPrivateKey,
 	}
 
-	if hasUsername && hasUserPrivateKey {
-		if hasClusterPublicKey {
-			// Set encryption if enabled server side
-			err = handle.SetEncryption(quasardb.EncryptNone)
-
-			// add security if enabled server side
-			err = handle.AddClusterPublicKey(clusterPublicKey)
-			err = handle.AddUserCredentials(username, userPrivateKey)
-		} else {
-			log.Printf("Warning: cannot connect user %s , cluster is not secured.", username)
-			return nil, err
-		}
-	}
-	
-	err = handle.Connect(model.URI)
-	if err != nil {
-        return nil, err
-	}
-
+    log.DefaultLogger.Info(fmt.Sprintf("=======> host: %s", hosts.Host))
 	return &instanceSettings{
-		handle: &handle,
+		host: hosts.Host,
+		credential: credential,
 	}, nil
 }
 
 func (s *instanceSettings) Dispose() {
-	s.handle.Close()
+	// s.handle.Close()
 }

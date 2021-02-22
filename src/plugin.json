@@ -12,10 +12,7 @@
       "name": "quasardb",
       "url": "https://quasardb.net"
     },
-    "keywords": [
-      "quasardb",
-      "backend"
-    ],
+    "keywords": ["quasardb", "backend"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
@@ -23,11 +20,11 @@
     "links": [
       {
         "name": "Website",
-        "url": "https://github.com/grafana/grafana-starter-datasource-backend"
+        "url": "https://github.com/bureau14/qdb-grafana-backend-plugin"
       },
       {
         "name": "License",
-        "url": "https://github.com/grafana/grafana-starter-datasource-backend/blob/master/LICENSE"
+        "url": "https://github.com/bureau14/qdb-grafana-backend-plugin/blob/master/LICENSE"
       }
     ],
     "screenshots": [],
