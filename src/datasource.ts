@@ -22,7 +22,10 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   query(request: DataQueryRequest<QdbQuery>): Observable<DataQueryResponse> {
     request.targets.map(x => (x.queryText = this.replaceRange(request.range, '$__range', x.queryText ?? '')));
     request.targets.map(x => (x.queryText = this.replaceRange(request.range, '${__range}', x.queryText ?? '')));
-    console.log(`request.targets[0].queryText: ${request.targets[0].queryText}`);
+    request.targets.map(x => (x.queryText = x.queryText?.replace('$__interval_ms', `${request.intervalMs}ms`)));
+    request.targets.map(x => (x.queryText = x.queryText?.replace('${__interval_ms}', `${request.intervalMs}ms`)));
+    request.targets.map(x => (x.queryText = x.queryText?.replace('$__interval', `${request.intervalMs}ms`)));
+    request.targets.map(x => (x.queryText = x.queryText?.replace('${__interval}', `${request.intervalMs}ms`)));
 
     return super.query(request);
   }
