@@ -28,7 +28,7 @@ export class QueryEditor extends PureComponent<Props> {
           value={queryText || ''}
           onChange={this.onQueryTextChange}
           label="Query"
-          placeholder="SELECT $timestamp, col_0, col_1 FROM ts IN RANGE(${__from:date:iso}, ${__to:date:iso});"
+          placeholder="SELECT $timestamp, col_0, col_1 FROM ts IN RANGE(${__from}, ${__to});"
           tooltip="A quasardb query"
         />
         <Button onClick={this.props.onRunQuery}>Test</Button>
