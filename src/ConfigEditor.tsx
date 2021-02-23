@@ -1,11 +1,11 @@
 import React, { ChangeEvent, PureComponent } from 'react';
 import { LegacyForms } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import { MyDataSourceOptions, SecureJsonData } from './types';
+import { QdbDataSourceOptions, QdbSecureJsonData } from './types';
 
 const { SecretFormField, FormField } = LegacyForms;
 
-interface Props extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
+interface Props extends DataSourcePluginOptionsEditorProps<QdbDataSourceOptions> {}
 
 interface State {}
 
@@ -72,7 +72,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
   render() {
     const { options } = this.props;
     const { jsonData, secureJsonFields } = options;
-    const secureJsonData = (options.secureJsonData || {}) as SecureJsonData;
+    const secureJsonData = (options.secureJsonData || {}) as QdbSecureJsonData;
 
     return (
       <div className="gf-form-group">
