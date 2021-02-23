@@ -246,7 +246,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 	if q.Query == "" {
-		return nil, fmt.Errorf("query cannot be empty.")
+		log.DefaultLogger.Warn("query cannot be empty. Aborting...")
+		return &response, nil
 	}
 
     queryRequest, err := json.Marshal(q)
