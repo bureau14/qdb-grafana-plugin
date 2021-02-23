@@ -5,6 +5,7 @@
   "id": "quasardb-qdb-grafana-backend-plugin",
   "metrics": true,
   "backend": true,
+  "alerting": true,
   "executable": "gpx_qdb-grafana-backend-plugin",
   "info": {
     "description": "Qdb Grafana Backend Plugin",
