@@ -225,29 +225,11 @@ func convertValues(column *QueryColumn) (interface{}, error) {
 	}
 }
 
-// func getType(column *QueryColumn) data.FieldType {	
-// 	switch t := column.Type; t {
-// 		case "timestamp":
-// 			return data.FieldTypeNullableTime
-// 		case "int64", "count":
-// 			return data.FieldTypeNullableInt64
-// 		case "double":
-// 			return data.FieldTypeNullableFloat64
-// 		case "blob", "string", "symbol":
-// 			return data.FieldTypeNullableString
-// 		default:
-// 			return data.FieldTypeNullableString
-// 	}
-// }
-
 func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, host string, token string) (*backend.DataResponse, error) {
 	// Unmarshal the json into our queryModel
 	var qm queryModel
 	
-	log.DefaultLogger.Info(fmt.Sprintf("----------- query -----------"))
-
 	response := backend.DataResponse{}
-
 	response.Error = json.Unmarshal(query.JSON, &qm)
 	if response.Error != nil {
 		return nil, response.Error
