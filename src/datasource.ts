@@ -11,16 +11,12 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   }
 
   transformScopedVars(request: DataQueryRequest<QdbQuery>) {
-    const range = {
-      from: request.range.from.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS'),
-      to: request.range.to.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS'),
-    };
+    const from = request.range.from.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS');
+    const to = request.range.to.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS');
 
     const vars: any = {
-      __from: range.from,
-      __to: range.to,
-      __range: `RANGE(${range.from}, ${range.to})`,
-      __interval: request.interval.slice(-1) === 'm' ? `${request.interval}in` : request.interval,
+      __range: `RANGE(${from}, ${to})`,
+      __interval: `${request.intervalMs}ms`,
     };
 
     return {
