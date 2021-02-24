@@ -17,6 +17,6 @@ export interface QdbDataSourceOptions extends DataSourceJsonData {
  * Value that is used in the backend, but never sent over HTTP to the frontend
  */
 export interface QdbSecureJsonData {
-  username?: string;
-  user_private_key?: string;
+  user?: string;
+  secret?: string;
 }

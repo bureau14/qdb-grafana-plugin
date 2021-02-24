@@ -24,7 +24,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
       ...options,
       secureJsonData: {
         ...options.secureJsonData,
-        username: event.target.value,
+        user: event.target.value,
       },
     });
   };
@@ -35,7 +35,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
       ...options,
       secureJsonData: {
         ...options.secureJsonData,
-        user_private_key: event.target.value,
+        secret: event.target.value,
       },
     });
   };
@@ -46,11 +46,11 @@ export class ConfigEditor extends PureComponent<Props, State> {
       ...options,
       secureJsonFields: {
         ...options.secureJsonFields,
-        username: false,
+        user: false,
       },
       secureJsonData: {
         ...options.secureJsonData,
-        username: '',
+        user: '',
       },
     });
   };
@@ -60,11 +60,11 @@ export class ConfigEditor extends PureComponent<Props, State> {
       ...options,
       secureJsonFields: {
         ...options.secureJsonFields,
-        user_private_key: false,
+        secret: false,
       },
       secureJsonData: {
         ...options.secureJsonData,
-        user_private_key: '',
+        secret: '',
       },
     });
   };
@@ -88,12 +88,12 @@ export class ConfigEditor extends PureComponent<Props, State> {
         </div>
         <div className="gf-form">
           <SecretFormField
-            isConfigured={(secureJsonFields && secureJsonFields.username) as boolean}
+            isConfigured={(secureJsonFields && secureJsonFields.user) as boolean}
             label="Username"
             labelWidth={6}
             inputWidth={20}
             onChange={this.onUsernameChange}
-            value={secureJsonData.username || ''}
+            value={secureJsonData.user || ''}
             onReset={this.onResetUsername}
             placeholder="User"
           />
@@ -102,8 +102,8 @@ export class ConfigEditor extends PureComponent<Props, State> {
         <div className="gf-form-inline">
           <div className="gf-form">
             <SecretFormField
-              isConfigured={(secureJsonFields && secureJsonFields.user_private_key) as boolean}
-              value={secureJsonData.user_private_key || ''}
+              isConfigured={(secureJsonFields && secureJsonFields.secret) as boolean}
+              value={secureJsonData.secret || ''}
               label="User Key"
               placeholder="User Key"
               labelWidth={6}

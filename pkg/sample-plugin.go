@@ -49,7 +49,7 @@ type QdbToken struct {
 
 type QdbCredential struct {
 	SecretKey string `json:"secret_key,omitempty"`
-	Username string `json:"username,omitempty"`
+	Username string `json:"user,omitempty"`
 }
 
 type QdbQuery struct {
@@ -327,14 +327,14 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
     }
 
 	var secureData = setting.DecryptedSecureJSONData
-    username, _ := secureData["username"]
-    userPrivateKey, _ := secureData["user_private_key"]
+    user, _ := secureData["user"]
+    userPrivateKey, _ := secureData["secret"]
 	
-	log.DefaultLogger.Info(fmt.Sprintf("username: %s", username))
+	log.DefaultLogger.Info(fmt.Sprintf("user: %s", user))
 	log.DefaultLogger.Info(fmt.Sprintf("user private key: %s", userPrivateKey))
 
 	credential := QdbCredential{
-		Username: username,
+		Username: user,
 		SecretKey: userPrivateKey,
 	}
 
