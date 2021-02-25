@@ -9,6 +9,7 @@ import (
     "io/ioutil"
 	"net/http"
 	"strconv"
+	"regexp"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -74,6 +75,7 @@ type QueryTable struct {
 type queryModel struct {
 	Format string `json:"format"`
 	QueryText string `json:"queryText"`
+	TagQuery bool `json:"tagQuery"`
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -106,7 +108,7 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
     }
     defer loginResponse.Body.Close()
     bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
-	
+
     var t QdbToken
     json.Unmarshal(bodyBytes, &t)
 	token := t.Token
@@ -229,11 +231,15 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	// Unmarshal the json into our queryModel
 	var qm queryModel
 	
+	log.DefaultLogger.Info(fmt.Sprintf("Query json: %v", query.JSON))
+	
+
 	response := backend.DataResponse{}
 	response.Error = json.Unmarshal(query.JSON, &qm)
 	if response.Error != nil {
 		return nil, response.Error
 	}
+
 
 	q := QdbQuery{
 		Query: qm.QueryText,
@@ -251,9 +257,25 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
     queryRequest, err := json.Marshal(q)
-    req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/api/query", host), bytes.NewBuffer(queryRequest))
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	path := fmt.Sprintf("%s/api/query", host)
+    req, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(queryRequest))
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+	
+	if qm.TagQuery {
+		path = fmt.Sprintf("%s/api/tags", host)
+		isTagWhereRegex := regexp.MustCompile(`^show\s+tags\s+where\s+tag\s+~\s+(\S+)$`)
+		if isTagWhereRegex.MatchString(qm.QueryText) {
+			found := isTagWhereRegex.FindStringSubmatch(qm.QueryText)
+			path = fmt.Sprintf("%s/api/tags?regex=%s", host, found[1])
+		}
+		req, err = http.NewRequest(http.MethodGet, path, nil)
+	} else {
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	}
+	
+	log.DefaultLogger.Info(fmt.Sprintf("path: %s", path))
+
     client := &http.Client{}
     queryResponse, err := client.Do(req)
     if err != nil {
@@ -265,6 +287,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
     var queryRes QueryResult
     json.Unmarshal(bodyBytes, &queryRes)
 
+	// TODO(vianney):
+	// once everything settles down, return empty dataframe instead
 	if len(queryRes.Tables) == 0 {
 		return nil, fmt.Errorf("No results")
 	}

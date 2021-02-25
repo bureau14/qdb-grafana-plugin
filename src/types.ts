@@ -2,6 +2,7 @@ import { DataQuery, DataSourceJsonData } from '@grafana/data';
 
 export interface QdbQuery extends DataQuery {
   queryText?: string;
+  tagQuery?: boolean;
 }
 
 export const defaultQuery: Partial<QdbQuery> = {};
