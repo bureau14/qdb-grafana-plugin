@@ -227,6 +227,31 @@ func convertValues(column *QueryColumn) (interface{}, error) {
 	}
 }
 
+func makeRequest(host string, query queryModel) (*http.Request, error) {
+	if query.TagQuery {
+		path := fmt.Sprintf("%s/api/tags", host)
+		isTagWhereRegex := regexp.MustCompile(`^show\s+tags\s+where\s+tag\s+~\s+(\S+)$`)
+		if isTagWhereRegex.MatchString(query.QueryText) {
+			found := isTagWhereRegex.FindStringSubmatch(query.QueryText)
+			path = fmt.Sprintf("%s/api/tags?regex=%s", host, found[1])
+		}
+		log.DefaultLogger.Info(fmt.Sprintf("path: %s", path))
+		return http.NewRequest(http.MethodGet, path, nil)
+	} else {
+		q := QdbQuery{
+			Query: query.QueryText,
+		}
+		queryRequest, err := json.Marshal(q)
+
+		path := fmt.Sprintf("%s/api/query", host)
+		log.DefaultLogger.Info(fmt.Sprintf("path: %s", path))
+
+		req, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(queryRequest))
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+		return req, err
+	}
+}
+
 func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, host string, token string) (*backend.DataResponse, error) {
 	// Unmarshal the json into our queryModel
 	var qm queryModel
@@ -240,41 +265,17 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		return nil, response.Error
 	}
 
-
-	q := QdbQuery{
-		Query: qm.QueryText,
-	}
-	log.DefaultLogger.Info(fmt.Sprintf("Query text: %s", q.Query))
-
-
 	// Log a warning if `Format` is empty.
 	if qm.Format == "" {
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
-	if q.Query == "" {
+	if qm.QueryText == "" {
 		log.DefaultLogger.Warn("query cannot be empty. Aborting...")
 		return &response, nil
 	}
 
-    queryRequest, err := json.Marshal(q)
-
-	path := fmt.Sprintf("%s/api/query", host)
-    req, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(queryRequest))
+	req, err := makeRequest(host, qm)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	
-	if qm.TagQuery {
-		path = fmt.Sprintf("%s/api/tags", host)
-		isTagWhereRegex := regexp.MustCompile(`^show\s+tags\s+where\s+tag\s+~\s+(\S+)$`)
-		if isTagWhereRegex.MatchString(qm.QueryText) {
-			found := isTagWhereRegex.FindStringSubmatch(qm.QueryText)
-			path = fmt.Sprintf("%s/api/tags?regex=%s", host, found[1])
-		}
-		req, err = http.NewRequest(http.MethodGet, path, nil)
-	} else {
-		req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	}
-	
-	log.DefaultLogger.Info(fmt.Sprintf("path: %s", path))
 
     client := &http.Client{}
     queryResponse, err := client.Do(req)
