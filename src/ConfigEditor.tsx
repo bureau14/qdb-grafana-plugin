@@ -18,6 +18,8 @@ export class ConfigEditor extends PureComponent<Props, State> {
     };
     onOptionsChange({ ...options, jsonData });
   };
+
+  // Secure fields (only sent to the backend)
   onUsernameChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     onOptionsChange({
@@ -28,7 +30,6 @@ export class ConfigEditor extends PureComponent<Props, State> {
       },
     });
   };
-  // Secure field (only sent to the backend)
   onUserPrivateKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { onOptionsChange, options } = this.props;
     onOptionsChange({

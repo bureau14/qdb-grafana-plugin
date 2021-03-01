@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"regexp"
+    "crypto/tls"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -78,6 +79,16 @@ type queryModel struct {
 	TagQuery bool `json:"tagQuery"`
 }
 
+func makeClient() *http.Client {
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+}
+
 // QueryData handles multiple queries and returns multiple responses.
 // req contains the queries []DataQuery (where each query contains RefID as a unique identifer).
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
@@ -99,11 +110,20 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 	if host == "" {
 		return nil, fmt.Errorf("Host cannot be empty")
 	}
-
 	credential := instSetting.credential
+
     loginRequest, err := json.Marshal(credential)
-    loginResponse, err := http.Post(fmt.Sprintf("%s/api/login", host), "application/json; charset=utf-8", bytes.NewBuffer(loginRequest))
-	if err != nil {
+    if err != nil {
+		return nil, err
+    }
+
+	path := fmt.Sprintf("%s/api/login", host)
+	loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
+	loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	client := makeClient()
+    loginResponse, err := client.Do(loginReq)
+    if err != nil {
 		return nil, err
     }
     defer loginResponse.Body.Close()
@@ -277,7 +297,9 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	req, err := makeRequest(host, qm)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-    client := &http.Client{}
+	log.DefaultLogger.Info(fmt.Sprintf("query: %s", qm.QueryText));
+
+	client := makeClient()
     queryResponse, err := client.Do(req)
     if err != nil {
 		return nil, err
@@ -371,5 +393,4 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
 }
 
 func (s *instanceSettings) Dispose() {
-	// s.handle.Close()
 }
