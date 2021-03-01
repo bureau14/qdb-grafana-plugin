@@ -73,6 +73,12 @@ type QueryTable struct {
 	Name string `json:"name,omitempty"`
 }
 
+type instanceSettings struct {
+	host string
+	token string
+	credential QdbCredential
+}
+
 type queryModel struct {
 	Format string `json:"format"`
 	QueryText string `json:"queryText"`
@@ -90,37 +96,40 @@ func makeClient() *http.Client {
 }
 
 func getToken(settings *instanceSettings) (string, error) {
-	host := settings.host
-	if host == "" {
-		return "", fmt.Errorf("Host cannot be empty")
+	if settings.token == "" {
+		log.DefaultLogger.Info(fmt.Sprintf(" ---- retrieving token ----"))
+		host := settings.host
+		if host == "" {
+			return "", fmt.Errorf("Host cannot be empty")
+		}
+		credential := settings.credential
+
+    	loginRequest, err := json.Marshal(credential)
+    	if err != nil {
+			return "", err
+    	}
+
+		path := fmt.Sprintf("%s/api/login", host)
+		loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
+		loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+		client := makeClient()
+    	loginResponse, err := client.Do(loginReq)
+    	if err != nil {
+			return "", err
+    	}
+    	defer loginResponse.Body.Close()
+    	bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+
+    	var t QdbToken
+    	json.Unmarshal(bodyBytes, &t)
+		settings.token = t.Token
+		if settings.token == "" {
+			return "", fmt.Errorf("Received empty token, check that your user's credentials are valid")
+		}
 	}
-	credential := settings.credential
-
-    loginRequest, err := json.Marshal(credential)
-    if err != nil {
-		return "", err
-    }
-
-	path := fmt.Sprintf("%s/api/login", host)
-	loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
-	loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
-
-	client := makeClient()
-    loginResponse, err := client.Do(loginReq)
-    if err != nil {
-		return "", err
-    }
-    defer loginResponse.Body.Close()
-    bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
-
-    var t QdbToken
-    json.Unmarshal(bodyBytes, &t)
-	token := t.Token
-	if token == "" {
-		err = fmt.Errorf("Received empty token, check that your user's credentials are valid")
-	}
-	log.DefaultLogger.Info(fmt.Sprintf("token: %s", token))
-	return token, err
+	log.DefaultLogger.Info(fmt.Sprintf("token: %s", settings.token))
+	return settings.token, nil
 }
 
 // QueryData handles multiple queries and returns multiple responses.
@@ -378,11 +387,6 @@ func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 		Status:  status,
 		Message: message,
 	}, nil
-}
-
-type instanceSettings struct {
-	host string
-	credential QdbCredential
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
