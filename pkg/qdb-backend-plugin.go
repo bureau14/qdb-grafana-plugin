@@ -85,6 +85,14 @@ type queryModel struct {
 	TagQuery bool `json:"tagQuery"`
 }
 
+type AuthError struct {
+}
+
+
+func (e *AuthError) Error() string {
+	return fmt.Sprintf("Authentication error.")
+}
+
 func makeClient() *http.Client {
 	return &http.Client{
 		Transport: &http.Transport{
@@ -159,7 +167,18 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 	for _, q := range req.Queries {
 		res, err := td.query(ctx, q, host, token)
 		if err != nil {
-			return nil, err
+			switch err.(type) {
+			case *AuthError:
+				log.DefaultLogger.Info(fmt.Sprintf(" ---- resetting token ----"))
+				settings.token = ""
+				token, err = getToken(settings)
+				res, err = td.query(ctx, q, host, token)
+				if err != nil {
+					return nil, err
+				}
+			default:
+				return nil, err
+		   }
 		}
 
 		// save the response in a hashmap
@@ -298,7 +317,6 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	var qm queryModel
 	
 	log.DefaultLogger.Info(fmt.Sprintf("Query json: %v", query.JSON))
-	
 
 	response := backend.DataResponse{}
 	response.Error = json.Unmarshal(query.JSON, &qm)
@@ -327,6 +345,10 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
     }
     defer queryResponse.Body.Close()
     bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
+
+	if queryResponse.StatusCode == 401 {
+		return nil, &AuthError{}
+	}
 
     var queryRes QueryResult
     json.Unmarshal(bodyBytes, &queryRes)
