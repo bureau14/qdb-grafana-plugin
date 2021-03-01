@@ -51,6 +51,7 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
 
   extractMacroVariables(template: any) {
     const dashVars = this.templateSrv.getVariables();
+
     const macroVariables = Array.from(template.matchAll(this.variableRegex));
     return macroVariables.map((match: any) => {
       const fullVariableName = match[0];
@@ -86,11 +87,8 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
 
   renderMacroTemplate(template: any, join: any) {
     // we only want macros that have a value
-    console.log(`template: ${template}`);
     let macroVariables = this.extractMacroVariables(template);
-    console.log(`macroVariables: ${macroVariables}`);
     macroVariables = macroVariables.filter(m => !!m.value);
-    console.log(`macroVariables: ${macroVariables}`);
     // all macrovariables value array length should be the same
 
     let result = [];
@@ -159,10 +157,6 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   }
 
   async metricFindQuery?(queryText: string, options?: any): Promise<MetricFindValue[]> {
-    console.log('metricFindQuery!');
-    console.log('options:');
-    console.log(options);
-
     let query: QdbQuery = {
       refId: options.id,
       queryText: queryText,
@@ -182,44 +176,15 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     };
 
     const response = await this.query(req);
-
-    console.log('query:');
-    console.log(query);
-
-    console.log('req:');
-    console.log(req);
-
-    console.log('response:');
-    console.log(response);
-
-    response.subscribe(res => console.log(res.data[0]));
-    return Promise.resolve([]);
-
-    // if (query.queryText === '') {
-    //   return Promise.resolve([]);
-    // }
-    // req: DataQueryRequest<QdbQuery>;
-
-    // const res = await response;
-    // try {
-    //   response.subscribe(res => res.data[0].fields[0].data.map((tag: any) => ({ text: tag })));
-    //   const result = res.data;
-    //   return result;
-    // } catch (error) {
-    //   console.log(error);
-    //   console.log(response);
-    //   throw Error('Unexpected metricFindQuery error. See console output for more information.');
-    // }
-    // return Promise.resolve([]);
-
-    // const res = this.query(req);
-
-    // return Promise.resolve([]);
+    return response.toPromise().then(res => {
+      const values: MetricFindValue[] = [];
+      let field = res.data[0].fields[0];
+      if (field) {
+        for (let i = 0; i < field.values.length; i++) {
+          values.push({ text: '' + field.values.get(i) });
+        }
+      }
+      return values;
+    });
   }
-
-  // async metricFindQuery(query: QdbQuery) {
-  //   query.queryText = query.trim()
-  //   // exit early if query is blank otherwise the server will return an invalid query error
-
-  // }
 }
