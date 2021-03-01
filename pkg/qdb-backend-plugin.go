@@ -89,6 +89,40 @@ func makeClient() *http.Client {
 	}
 }
 
+func getToken(settings *instanceSettings) (string, error) {
+	host := settings.host
+	if host == "" {
+		return "", fmt.Errorf("Host cannot be empty")
+	}
+	credential := settings.credential
+
+    loginRequest, err := json.Marshal(credential)
+    if err != nil {
+		return "", err
+    }
+
+	path := fmt.Sprintf("%s/api/login", host)
+	loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
+	loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	client := makeClient()
+    loginResponse, err := client.Do(loginReq)
+    if err != nil {
+		return "", err
+    }
+    defer loginResponse.Body.Close()
+    bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+
+    var t QdbToken
+    json.Unmarshal(bodyBytes, &t)
+	token := t.Token
+	if token == "" {
+		err = fmt.Errorf("Received empty token, check that your user's credentials are valid")
+	}
+	log.DefaultLogger.Info(fmt.Sprintf("token: %s", token))
+	return token, err
+}
+
 // QueryData handles multiple queries and returns multiple responses.
 // req contains the queries []DataQuery (where each query contains RefID as a unique identifer).
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
@@ -99,43 +133,18 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 	log.DefaultLogger.Info(fmt.Sprintf("----------- QueryData -----------"))
 	// create response struct
 	response := backend.NewQueryDataResponse()
-	
+
 	instance, err := td.im.Get(req.PluginContext)
 	if err != nil {
 		return nil, err
 	}
-	instSetting, _ := instance.(*instanceSettings)
-	
-	host := instSetting.host
-	if host == "" {
-		return nil, fmt.Errorf("Host cannot be empty")
+	settings, _ := instance.(*instanceSettings)
+
+	host := settings.host
+	token, err := getToken(settings)
+	if err != nil {
+		return nil, err
 	}
-	credential := instSetting.credential
-
-    loginRequest, err := json.Marshal(credential)
-    if err != nil {
-		return nil, err
-    }
-
-	path := fmt.Sprintf("%s/api/login", host)
-	loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
-	loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
-
-	client := makeClient()
-    loginResponse, err := client.Do(loginReq)
-    if err != nil {
-		return nil, err
-    }
-    defer loginResponse.Body.Close()
-    bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
-
-	// log.DefaultLogger.Info(fmt.Sprintf("user: %s", credential.Username))
-	// log.DefaultLogger.Info(fmt.Sprintf("secret: %s", credential.SecretKey))
-
-    var t QdbToken
-    json.Unmarshal(bodyBytes, &t)
-	token := t.Token
-	log.DefaultLogger.Info(fmt.Sprintf("token: %s", token))
 
 	// loop over queries and execute them individually.
 	for _, q := range req.Queries {
@@ -352,6 +361,18 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
 	var status = backend.HealthStatusOk
 	var message = "Data source is working"
+
+	instance, err := td.im.Get(req.PluginContext)
+	if err != nil {
+		return nil, err
+	}
+	settings, _ := instance.(*instanceSettings)
+
+	_, err = getToken(settings)
+	if err != nil {
+		status = backend.HealthStatusError
+		message = err.Error()
+	}
 
 	return &backend.CheckHealthResult{
 		Status:  status,
