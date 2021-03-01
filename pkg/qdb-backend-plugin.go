@@ -46,12 +46,12 @@ type SampleDatasource struct {
 
 type QdbToken struct {
 	// token
-	Token string `json:"token,omitempty"`
+	Token string `json:"token"`
 }
 
 type QdbCredential struct {
 	SecretKey string `json:"secret_key,omitempty"`
-	Username string `json:"user,omitempty"`
+	Username string `json:"username,omitempty"`
 }
 
 type QdbQuery struct {
@@ -128,6 +128,9 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
     }
     defer loginResponse.Body.Close()
     bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+
+	// log.DefaultLogger.Info(fmt.Sprintf("user: %s", credential.Username))
+	// log.DefaultLogger.Info(fmt.Sprintf("secret: %s", credential.SecretKey))
 
     var t QdbToken
     json.Unmarshal(bodyBytes, &t)
