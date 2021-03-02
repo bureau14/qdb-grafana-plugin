@@ -45,8 +45,11 @@ type SampleDatasource struct {
 }
 
 type QdbToken struct {
-	// token
 	Token string `json:"token"`
+}
+
+type QdbError struct {
+	Message string `json:"message,omitempty"`
 }
 
 type QdbCredential struct {
@@ -85,12 +88,12 @@ type queryModel struct {
 	TagQuery bool `json:"tagQuery"`
 }
 
-type AuthError struct {
+type ResetTokenError struct {
 }
 
 
-func (e *AuthError) Error() string {
-	return fmt.Sprintf("Authentication error.")
+func (e *ResetTokenError) Error() string {
+	return fmt.Sprintf("Issuing token reset.")
 }
 
 func makeClient() *http.Client {
@@ -133,7 +136,9 @@ func getToken(settings *instanceSettings) (string, error) {
     	json.Unmarshal(bodyBytes, &t)
 		settings.token = t.Token
 		if settings.token == "" {
-			return "", fmt.Errorf("Received empty token, check that your user's credentials are valid")
+			var e QdbError
+			json.Unmarshal(bodyBytes, &e)
+			return "", fmt.Errorf("%s", e.Message)
 		}
 	}
 	log.DefaultLogger.Info(fmt.Sprintf("token: %s", settings.token))
@@ -168,7 +173,7 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 		res, err := td.query(ctx, q, host, token)
 		if err != nil {
 			switch err.(type) {
-			case *AuthError:
+			case *ResetTokenError:
 				log.DefaultLogger.Info(fmt.Sprintf(" ---- resetting token ----"))
 				settings.token = ""
 				token, err = getToken(settings)
@@ -329,8 +334,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 	if qm.QueryText == "" {
-		log.DefaultLogger.Warn("query cannot be empty. Aborting...")
-		return &response, nil
+		return nil, fmt.Errorf("query cannot be empty. Aborting...")
 	}
 
 	req, err := makeRequest(host, qm)
@@ -347,15 +351,24 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
     bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
 
 	if queryResponse.StatusCode == 401 {
-		return nil, &AuthError{}
+		return nil, &ResetTokenError{}
 	}
 
     var queryRes QueryResult
     json.Unmarshal(bodyBytes, &queryRes)
 
-	// TODO(vianney):
-	// once everything settles down, return empty dataframe instead
 	if len(queryRes.Tables) == 0 {
+		var e QdbError
+		json.Unmarshal(bodyBytes, &e)
+		if e.Message != "" {
+			// if connection was reset the handle is probably not valid anymore
+			// might as well issue a new one
+			// which is what we do on ResetTokenError
+			if e.Message == "Connection reset by peer." {
+				return nil, &ResetTokenError{}
+			}
+			return nil, fmt.Errorf("%s", e.Message)
+		}
 		return nil, fmt.Errorf("No results")
 	}
 
