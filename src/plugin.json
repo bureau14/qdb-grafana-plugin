@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
   "name": "qdb-grafana-backend-plugin",
-  "id": "quasardb-qdb-grafana-backend-plugin",
+  "id": "quasardb-datasource",
   "metrics": true,
   "backend": true,
   "alerting": true,
