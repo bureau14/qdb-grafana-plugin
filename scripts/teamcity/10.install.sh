@@ -21,3 +21,4 @@ cd $GOPATH/src/github.com/magefile/mage
 go run bootstrap.go
 
 ${NPM} install --global yarn
+${YARN} install
