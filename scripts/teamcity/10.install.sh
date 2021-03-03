@@ -8,6 +8,7 @@ echo "Installing version: $NODE_VERSION -- arch: $NODE_ARCH";
 nvm_load
 nvm install $NODE_VERSION $NODE_ARCH
 
+rm $GOPATH/go.mod
 rm -Rf $GOPATH/src/github.com/magefile
 go get -u -d github.com/magefile/mage
 cd $GOPATH/src/github.com/magefile/mage
