@@ -20,7 +20,8 @@ go get -u -d github.com/magefile/mage
 cd $GOPATH/src/github.com/magefile/mage
 go run bootstrap.go
 
-go get -u github.com/grafana/grafana-plugin-sdk-go/build
+go get github.com/grafana/grafana-plugin-sdk-go
+go get github.com/grafana/grafana-plugin-sdk-go/build
 
 ${NPM} install --global yarn
 ${YARN} install
