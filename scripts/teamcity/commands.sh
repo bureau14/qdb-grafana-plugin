@@ -36,4 +36,5 @@ function npm_config {
         *)
             $NPM config set python python3
         ;;
-    es
+    esac
+}
