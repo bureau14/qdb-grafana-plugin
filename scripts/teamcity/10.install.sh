@@ -16,6 +16,8 @@ npm_config
 
 rm $GOPATH/go.mod || true
 rm -Rf $GOPATH/src/github.com/magefile
+
+cd $GOPATH
 go get -d github.com/magefile/mage
 
 echo "--- Try in GOPATH"
