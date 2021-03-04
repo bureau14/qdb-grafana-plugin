@@ -367,9 +367,9 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 			if e.Message == "Connection reset by peer." {
 				return nil, &ResetTokenError{}
 			}
-			return nil, fmt.Errorf("%s", e.Message)
+			return nil, fmt.Errorf("Tried to query:\n'%s'\nGot error: '%s'", qm.QueryText, e.Message)
 		}
-		return nil, fmt.Errorf("No results")
+		return nil, fmt.Errorf("Tried to query:\n%s\nNo results", qm.QueryText)
 	}
 
 	if len(queryRes.Tables) > 1 {

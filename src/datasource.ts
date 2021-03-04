@@ -92,6 +92,10 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     // all macrovariables value array length should be the same
 
     let result = [];
+    if (macroVariables.length <= 0) {
+      console.warn('No variables to expand. If this is unusual, make sure your variables are set to multi-value.');
+      return '';
+    }
     for (let i = 0; i < macroVariables[0].value.length; i++) {
       let resultTemplate = template;
       for (let j = 0; j < macroVariables.length; j++) {
@@ -119,7 +123,6 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     sql = this.buildSqlTemplate(sql, '$__and', ' AND ');
 
     const result = this.templateSrv.replace(sql, variables);
-    console.log(result);
     return result;
   }
 
@@ -143,7 +146,6 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
 
   query(request: DataQueryRequest<QdbQuery>): Observable<DataQueryResponse> {
     if (request.targets[0].tagQuery === true) {
-      console.log('tag query!');
       return super.query(request);
     }
     request.targets.map(
