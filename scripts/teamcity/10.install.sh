@@ -18,8 +18,6 @@ rm $GOPATH/go.mod || true
 rm -Rf $GOPATH/src/github.com/magefile
 go get -d github.com/magefile/mage
 
-echo "--- Try in GOROOT"
-ls -l $GOROOT/src/github.com/magefile
 echo "--- Try in GOPATH"
 ls -l $GOPATH/src/github.com/magefile
 
