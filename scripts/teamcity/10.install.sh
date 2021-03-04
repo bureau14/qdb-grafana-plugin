@@ -16,14 +16,18 @@ npm_config
 
 rm $GOPATH/go.mod || true
 rm -Rf $GOPATH/src/github.com/magefile
-go get -u -d github.com/magefile/mage
+go get -d github.com/magefile/mage
+
+echo "--- Try in GOROOT"
+ls -l $GOROOT/src/github.com/magefile
+echo "--- Try in GOPATH"
+ls -l $GOPATH/src/github.com/magefile
+
 cd $GOPATH/src/github.com/magefile/mage
 go run bootstrap.go
 
 go get github.com/grafana/grafana-plugin-sdk-go
 go get github.com/grafana/grafana-plugin-sdk-go/build
-go get -u github.com/grafana/grafana-plugin-sdk-go
-go get -u github.com/grafana/grafana-plugin-sdk-go/build
 
 ${NPM} install --global yarn
 ${YARN} install
