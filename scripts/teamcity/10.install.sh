@@ -14,6 +14,7 @@ nvm_use
 npm_config
 
 
+mkdir $GOPATH || true
 rm $GOPATH/go.mod || true
 rm -Rf $GOPATH/src/github.com/magefile
 go get -u -d github.com/magefile/mage
