@@ -17,6 +17,7 @@ npm_config
 rm $GOPATH/go.mod || true
 rm -Rf $GOPATH/src/github.com/magefile
 
+mkdir $GOPATH || true
 cd $GOPATH
 go get -d github.com/magefile/mage
 
