@@ -84,7 +84,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
             inputWidth={20}
             onChange={this.onHostChange}
             value={jsonData.host || ''}
-            placeholder="A host ip address"
+            placeholder="Quasardb REST API URL"
           />
         </div>
         <div className="gf-form">
