@@ -5,6 +5,39 @@ import { QdbDataSourceOptions, QdbQuery } from './types';
 import { getTemplateSrv } from '@grafana/runtime';
 import { Observable } from 'rxjs';
 
+export function extractMacrosFunction(query: any, macro: any) {
+  const macroStart = `${macro}(`;
+
+  let fromIndex = 0;
+  let matchIndex = query.indexOf(macroStart, fromIndex);
+  let matches = [];
+
+  while (matchIndex !== -1) {
+    let stack = [];
+    const startIndex = matchIndex + macroStart.length;
+    for (let i = startIndex; i < query.length; i++) {
+      const ch = query.charAt(i);
+      if (ch === '(') {
+        stack.push(ch);
+      } else if (ch === ')') {
+        if (stack.length) {
+          stack.pop();
+        } else {
+          matches.push({
+            start: matchIndex,
+            end: i,
+            template: query.substring(startIndex, i).trim(),
+          });
+          fromIndex = i;
+          break;
+        }
+      }
+    }
+    matchIndex = query.indexOf(macroStart, fromIndex);
+  }
+  return matches;
+}
+
 export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOptions> {
   templateSrv: any;
 
@@ -15,39 +48,6 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
 
   // This is taken from https://github.com/grafana/grafana/blob/master/public/app/features/variables/utils.ts#L16
   variableRegex = /\$(\w+)|\[\[([\s\S]+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
-
-  extractMacrosFunction(query: any, macro: any) {
-    const macroStart = `${macro}(`;
-
-    let fromIndex = 0;
-    let matchIndex = query.indexOf(macroStart, fromIndex);
-    let matches = [];
-
-    while (matchIndex !== -1) {
-      let stack = [];
-      const startIndex = matchIndex + macroStart.length;
-      for (let i = startIndex; i < query.length; i++) {
-        const ch = query.charAt(i);
-        if (ch === '(') {
-          stack.push(ch);
-        } else if (ch === ')') {
-          if (stack.length) {
-            stack.pop();
-          } else {
-            matches.push({
-              start: matchIndex,
-              end: i,
-              template: query.substring(startIndex, i).trim(),
-            });
-            fromIndex = i;
-            break;
-          }
-        }
-      }
-      matchIndex = query.indexOf(macroStart, fromIndex);
-    }
-    return matches;
-  }
 
   extractMacroVariables(template: any) {
     const dashVars = this.templateSrv.getVariables();
