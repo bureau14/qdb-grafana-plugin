@@ -29,7 +29,6 @@ mkdir $GOPATH || true
 cd $GOPATH
 go get -d github.com/magefile/mage
 
-echo "--- Try in GOPATH"
 ls -l $GOPATH/src/github.com/magefile
 
 cd $GOPATH/src/github.com/magefile/mage
