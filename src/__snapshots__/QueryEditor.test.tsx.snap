@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`QueryEditor 1`] = `
+<div
+  className="gf-form"
+>
+  <textarea
+    className="css-1f38lle"
+    label="Query"
+    onChange={[Function]}
+    value="SELECT * FROM ts;"
+  />
+  <button
+    className="css-u6ysb0-button"
+  >
+    <span
+      className="css-1beih13"
+    >
+      <span>
+        Run Query
+      </span>
+    </span>
+  </button>
+</div>
+`;
