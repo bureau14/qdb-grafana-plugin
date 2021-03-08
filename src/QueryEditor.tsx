@@ -1,17 +1,15 @@
 import defaults from 'lodash/defaults';
 
 import React, { ChangeEvent, PureComponent } from 'react';
-import { LegacyForms, Button } from '@grafana/ui';
+import { TextArea, Button } from '@grafana/ui';
 import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from './datasource';
 import { defaultQuery, QdbDataSourceOptions, QdbQuery } from './types';
 
-const { FormField } = LegacyForms;
-
 type Props = QueryEditorProps<DataSource, QdbQuery, QdbDataSourceOptions>;
 
 export class QueryEditor extends PureComponent<Props> {
-  onQueryTextChange = (event: ChangeEvent<HTMLInputElement>) => {
+  onQueryTextChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
     const { onChange, query } = this.props;
     onChange({ ...query, queryText: event.target.value });
   };
@@ -22,16 +20,8 @@ export class QueryEditor extends PureComponent<Props> {
 
     return (
       <div className="gf-form">
-        <FormField
-          labelWidth={8}
-          inputWidth={30}
-          value={queryText || ''}
-          onChange={this.onQueryTextChange}
-          label="Query"
-          placeholder="SELECT $timestamp, col_0, col_1 FROM ts IN RANGE(${__from}, ${__to});"
-          tooltip="A quasardb query"
-        />
-        <Button onClick={this.props.onRunQuery}>Test</Button>
+        <TextArea label="Query" value={queryText || ''} onChange={this.onQueryTextChange}></TextArea>
+        <Button onClick={this.props.onRunQuery}>Run Query</Button>
       </div>
     );
   }
