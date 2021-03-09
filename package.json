@@ -16,6 +16,7 @@
     "@grafana/runtime": "latest",
     "@grafana/toolkit": "latest",
     "@grafana/ui": "latest",
+    "@types/jest": "^26.0.20",
     "@types/lodash": "latest",
     "react-test-renderer": "^17.0.1"
   },
