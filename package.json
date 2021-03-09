@@ -18,6 +18,7 @@
     "@grafana/ui": "latest",
     "@types/jest": "^26.0.20",
     "@types/lodash": "latest",
+    "@types/react-test-renderer": "^17.0.1",
     "react-test-renderer": "^17.0.1"
   },
   "resolutions": {

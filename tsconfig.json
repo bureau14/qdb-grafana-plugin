@@ -5,6 +5,6 @@
     "rootDir": "./src",
     "baseUrl": "./src",
     "typeRoots": ["./node_modules/@types"],
-    "types": ["@emotion/core", "@types/jest"]
+    "types": ["@emotion/core", "@types/jest", "@types/react-test-renderer"]
   }
 }
