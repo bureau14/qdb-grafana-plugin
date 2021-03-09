@@ -107,9 +107,9 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   }
 
   buildSqlTemplate(sql: string, macro: string, replacer: string) {
-    let macros = this.extractMacrosFunction(sql, macro);
+    let macros = extractMacrosFunction(sql, macro);
     if (macros.length) {
-      sql = macros.reduce((query, mc) => {
+      sql = macros.reduce((query: string, mc: { template: any; start: any; end: number }) => {
         const template = this.renderMacroTemplate(mc.template, replacer);
         return query.substring(0, mc.start) + template + query.substring(mc.end + 1);
       }, sql);
