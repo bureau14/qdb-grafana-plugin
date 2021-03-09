@@ -12,6 +12,7 @@ exports[`QueryEditor 1`] = `
   />
   <button
     className="css-u6ysb0-button"
+    onClick={[MockFunction]}
   >
     <span
       className="css-1beih13"

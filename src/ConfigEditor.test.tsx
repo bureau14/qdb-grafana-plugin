@@ -1,8 +1,10 @@
 // ConfigEditor.test.js
 import React from 'react';
-import renderer from 'react-test-renderer';
+import { create } from 'react-test-renderer';
 import { ConfigEditor } from './ConfigEditor';
+import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
 import { QdbDataSourceOptions, QdbSecureJsonData } from './types';
+import { createDatasourceSettings } from './mocks';
 
 test('ConfigEditor', () => {
   let jsonData: QdbDataSourceOptions = {
@@ -13,11 +15,18 @@ test('ConfigEditor', () => {
     secret: 'SIqZ+vg4eZGeuhzCyT90OtwweivdtOieodaaTV/Xtd6k=',
   };
 
-  let options = {
-    jsonData: jsonData,
-    secureJsonData: secureJsonData,
+  let opts = createDatasourceSettings(jsonData);
+  let props: DataSourcePluginOptionsEditorProps<QdbDataSourceOptions> = {
+    options: {
+      ...opts,
+      secureJsonData: secureJsonData,
+    },
+    onOptionsChange: () => {
+      return;
+    },
   };
-  const component = renderer.create(<ConfigEditor options={options}></ConfigEditor>);
+
+  const component = create(<ConfigEditor options={props.options} onOptionsChange={props.onOptionsChange} />);
   let tree = component.toJSON();
   expect(tree).toMatchSnapshot();
 });
