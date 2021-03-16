@@ -17,3 +17,6 @@ rest_log.out.txt
 secure/
 user_private.key
 users.cfg
+
+coverage/
+dist/
