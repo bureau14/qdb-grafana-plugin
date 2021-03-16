@@ -1,2 +1,2 @@
-rm qdb-grafana-backend-plugin.zip || true
-zip -vr qdb-grafana-backend-plugin dist
+rm qdb-grafana-plugin.zip || true
+zip -vr qdb-grafana-plugin dist

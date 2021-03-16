@@ -1,4 +1,4 @@
-module github.com/bureau14/qdb-grafana-backend-plugin
+module github.com/bureau14/qdb-grafana-plugin
 
 go 1.15
 
