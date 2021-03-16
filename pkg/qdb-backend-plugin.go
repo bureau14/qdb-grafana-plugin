@@ -108,15 +108,18 @@ func makeClient() *http.Client {
 
 func getToken(settings *instanceSettings) (string, error) {
 	if settings.token == "" {
-		log.DefaultLogger.Info(fmt.Sprintf(" ---- retrieving token ----"))
+		log.DefaultLogger.Debug(fmt.Sprintf("Retrieving token"))
 		host := settings.host
 		if host == "" {
-			return "", fmt.Errorf("Host cannot be empty")
+			errMsg := "Host cannot be empty"
+			log.DefaultLogger.Error(errMsg)
+			return "", fmt.Errorf(errMsg)
 		}
 		credential := settings.credential
 
     	loginRequest, err := json.Marshal(credential)
     	if err != nil {
+			log.DefaultLogger.Error(err.Error())
 			return "", err
     	}
 
@@ -124,9 +127,16 @@ func getToken(settings *instanceSettings) (string, error) {
 		loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
 		loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
 
+		if credential.Username == "" {
+			log.DefaultLogger.Debug(fmt.Sprintf("Login anonymously to endpoint '%s'", host))
+		} else {
+			log.DefaultLogger.Debug(fmt.Sprintf("Login '%s' to endpoint '%s'", credential.Username, host))
+		}
+
 		client := makeClient()
     	loginResponse, err := client.Do(loginReq)
     	if err != nil {
+			log.DefaultLogger.Error(err.Error())
 			return "", err
     	}
     	defer loginResponse.Body.Close()
@@ -138,10 +148,10 @@ func getToken(settings *instanceSettings) (string, error) {
 		if settings.token == "" {
 			var e QdbError
 			json.Unmarshal(bodyBytes, &e)
+			log.DefaultLogger.Error(e.Message)
 			return "", fmt.Errorf("%s", e.Message)
 		}
 	}
-	log.DefaultLogger.Info(fmt.Sprintf("token: %s", settings.token))
 	return settings.token, nil
 }
 
@@ -150,9 +160,8 @@ func getToken(settings *instanceSettings) (string, error) {
 // The QueryDataResponse contains a map of RefID to the response for each query, and each response
 // contains Frames ([]*Frame).
 func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
-	log.DefaultLogger.Info("QueryData", "request", req)
+	log.DefaultLogger.Debug("QueryData", "request", req)
 
-	log.DefaultLogger.Info(fmt.Sprintf("----------- QueryData -----------"))
 	// create response struct
 	response := backend.NewQueryDataResponse()
 
@@ -174,14 +183,16 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 		if err != nil {
 			switch err.(type) {
 			case *ResetTokenError:
-				log.DefaultLogger.Info(fmt.Sprintf(" ---- resetting token ----"))
+				log.DefaultLogger.Warn("Token reset.")
 				settings.token = ""
 				token, err = getToken(settings)
 				res, err = td.query(ctx, q, host, token)
 				if err != nil {
+					log.DefaultLogger.Error(err.Error())
 					return nil, err
 				}
 			default:
+				log.DefaultLogger.Error(err.Error())
 				return nil, err
 		   }
 		}
@@ -300,7 +311,7 @@ func makeRequest(host string, query queryModel) (*http.Request, error) {
 			found := isTagWhereRegex.FindStringSubmatch(query.QueryText)
 			path = fmt.Sprintf("%s/api/tags?regex=%s", host, found[1])
 		}
-		log.DefaultLogger.Info(fmt.Sprintf("path: %s", path))
+		log.DefaultLogger.Debug(fmt.Sprintf("Request path: %s", path))
 		return http.NewRequest(http.MethodGet, path, nil)
 	} else {
 		q := QdbQuery{
@@ -309,7 +320,7 @@ func makeRequest(host string, query queryModel) (*http.Request, error) {
 		queryRequest, err := json.Marshal(q)
 
 		path := fmt.Sprintf("%s/api/query", host)
-		log.DefaultLogger.Info(fmt.Sprintf("path: %s", path))
+		log.DefaultLogger.Debug(fmt.Sprintf("Request path: %s", path))
 
 		req, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(queryRequest))
 		req.Header.Set("Content-Type", "application/json; charset=utf-8")
@@ -320,8 +331,6 @@ func makeRequest(host string, query queryModel) (*http.Request, error) {
 func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, host string, token string) (*backend.DataResponse, error) {
 	// Unmarshal the json into our queryModel
 	var qm queryModel
-	
-	log.DefaultLogger.Info(fmt.Sprintf("Query json: %v", query.JSON))
 
 	response := backend.DataResponse{}
 	response.Error = json.Unmarshal(query.JSON, &qm)
@@ -340,11 +349,12 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	req, err := makeRequest(host, qm)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	log.DefaultLogger.Info(fmt.Sprintf("query: %s", qm.QueryText));
+	log.DefaultLogger.Debug(fmt.Sprintf("query: %s", qm.QueryText))
 
 	client := makeClient()
     queryResponse, err := client.Do(req)
     if err != nil {
+		log.DefaultLogger.Error(fmt.Sprintf("Response: %v", queryResponse))
 		return nil, err
     }
     defer queryResponse.Body.Close()
@@ -356,6 +366,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 
     var queryRes QueryResult
     json.Unmarshal(bodyBytes, &queryRes)
+	
+	log.DefaultLogger.Debug(fmt.Sprintf("Table count: %d", len(queryRes.Tables)))
 
 	if len(queryRes.Tables) == 0 {
 		var e QdbError
@@ -380,17 +392,22 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	frame := data.NewFrame("response")
 
 	table := queryRes.Tables[0]
+	log.DefaultLogger.Debug(fmt.Sprintf("Column count: %d", len(table.Columns)))
+	rowCount := 0
 	for _, column := range table.Columns {
 		values, err := convertValues(column)
 		if err != nil {
 			return nil, err
 		}
-		log.DefaultLogger.Info(fmt.Sprintf("values: %v", values))
+		if rowCount == 0 {
+			rowCount = len(column.Data)
+		}
 
 		frame.Fields = append(frame.Fields,
 			data.NewField(column.Name, nil, values),
 		)
 	}
+	log.DefaultLogger.Debug(fmt.Sprintf("Row count: %d", rowCount))
 
 	// add the frames to the response
 	response.Frames = append(response.Frames, frame)
@@ -439,16 +456,12 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
 	var secureData = setting.DecryptedSecureJSONData
     user, _ := secureData["user"]
     userPrivateKey, _ := secureData["secret"]
-	
-	log.DefaultLogger.Info(fmt.Sprintf("user: %s", user))
-	log.DefaultLogger.Info(fmt.Sprintf("user private key: %s", userPrivateKey))
 
 	credential := QdbCredential{
 		Username: user,
 		SecretKey: userPrivateKey,
 	}
 
-    log.DefaultLogger.Info(fmt.Sprintf("=======> host: %s", hosts.Host))
 	return &instanceSettings{
 		host: hosts.Host,
 		credential: credential,
