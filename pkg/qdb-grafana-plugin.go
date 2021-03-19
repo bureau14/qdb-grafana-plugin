@@ -381,7 +381,9 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 			}
 			return nil, fmt.Errorf("Tried to query:\n'%s'\nGot error: '%s'", qm.QueryText, e.Message)
 		}
-		return nil, fmt.Errorf("Tried to query:\n%s\nNo results", qm.QueryText)
+		// consider that an empty result is not an error
+		// send back empty response
+		return &response, nil
 	}
 
 	if len(queryRes.Tables) > 1 {
