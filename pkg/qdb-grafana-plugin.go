@@ -335,7 +335,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	response := backend.DataResponse{}
 	response.Error = json.Unmarshal(query.JSON, &qm)
 	if response.Error != nil {
-		return nil, response.Error
+		return &response, nil
 	}
 
 	// Log a warning if `Format` is empty.
@@ -343,7 +343,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 	if qm.QueryText == "" {
-		return nil, fmt.Errorf("query cannot be empty. Aborting...")
+		response.Error = fmt.Errorf("Error: query cannot be empty. Aborting...")
+		return &response, nil
 	}
 
 	req, err := makeRequest(host, qm)
@@ -355,7 +356,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
     queryResponse, err := client.Do(req)
     if err != nil {
 		log.DefaultLogger.Error(fmt.Sprintf("Response: %v", queryResponse))
-		return nil, err
+		response.Error = err
+		return &response, nil
     }
     defer queryResponse.Body.Close()
     bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
@@ -379,7 +381,15 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 			if e.Message == "Connection reset by peer." {
 				return nil, &ResetTokenError{}
 			}
-			return nil, fmt.Errorf("Tried to query:\n'%s'\nGot error: '%s'", qm.QueryText, e.Message)
+			if e.Message == "An entry matching the provided alias cannot be found." {
+				re := regexp.MustCompile(`(?i)FROM (\$__comma\()?FIND`)
+				if ok := re.MatchString(qm.QueryText); ok {
+					// There is a semantic difference when you try to find a tag
+					return &response, nil
+				}
+			}
+			response.Error = fmt.Errorf("Error: '%s'", qm.QueryText, e.Message)
+			return &response, nil
 		}
 		// consider that an empty result is not an error
 		// send back empty response
@@ -387,7 +397,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
 	if len(queryRes.Tables) > 1 {
-		return nil, fmt.Errorf("Multiple tables result are not supported at this time.")
+		response.Error = fmt.Errorf("Error: Multiple tables result are not supported at this time.")
+		return &response, nil
 	}
 
 	// create data frame response
