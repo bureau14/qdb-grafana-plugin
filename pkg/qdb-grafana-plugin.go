@@ -288,7 +288,7 @@ func convertBlobLikeColumn(data []interface{}) ([]*string, error) {
 	return out, nil
 }
 
-func convertValues(column *QueryColumn) (interface{}, error) {
+func convertValues(column *QueryColumn, rowCount int) (interface{}, error) {
 	switch t := column.Type; t {
 		case "timestamp":
 			return convertTimestampColumn(column.Data)
@@ -299,7 +299,7 @@ func convertValues(column *QueryColumn) (interface{}, error) {
 		case "blob", "string", "symbol":
 			return convertBlobLikeColumn(column.Data)
 		default:
-			return []*string{}, nil
+			return make([]*string, rowCount), nil
 	}
 }
 
@@ -408,12 +408,13 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	log.DefaultLogger.Debug(fmt.Sprintf("Column count: %d", len(table.Columns)))
 	rowCount := 0
 	for _, column := range table.Columns {
-		values, err := convertValues(column)
-		if err != nil {
-			return nil, err
-		}
 		if rowCount == 0 {
 			rowCount = len(column.Data)
+		}
+
+		values, err := convertValues(column, rowCount)
+		if err != nil {
+			return nil, err
 		}
 
 		frame.Fields = append(frame.Fields,
