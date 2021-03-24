@@ -402,7 +402,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
 	// create data frame response
-	frame := data.NewFrame("response")
+	frame := data.NewFrame(qm.QueryText)
 
 	table := queryRes.Tables[0]
 	log.DefaultLogger.Debug(fmt.Sprintf("Column count: %d", len(table.Columns)))
