@@ -14,7 +14,7 @@ nvm_use
 npm_config
 
 mkdir $GOPATH || true
-cp go.mod $GOPATH/.
+rm $GOPATH/go.mod || true
 
 go get github.com/grafana/grafana-plugin-sdk-go
 go get github.com/grafana/grafana-plugin-sdk-go/build
@@ -33,8 +33,3 @@ ls -l $GOPATH/src/github.com/magefile
 
 cd $GOPATH/src/github.com/magefile/mage
 go run bootstrap.go
-
-go get github.com/grafana/grafana-plugin-sdk-go
-go get github.com/grafana/grafana-plugin-sdk-go/build
-go get -u github.com/grafana/grafana-plugin-sdk-go
-go get -u github.com/grafana/grafana-plugin-sdk-go/build
