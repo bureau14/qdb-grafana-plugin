@@ -8,5 +8,6 @@ source "$SCRIPT_DIR/configure.sh"
 export CGO_ENABLED=0
 
 rm -Rf dist
-${YARN} build
 mage -v
+
+${YARN} build
