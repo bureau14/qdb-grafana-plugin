@@ -13,13 +13,10 @@ source "$SCRIPT_DIR/configure.sh"
 nvm_use
 npm_config
 
+rm -Rf $GOPATH || true 
+
 mkdir $GOPATH || true
 rm $GOPATH/go.mod || true
-
-go get github.com/grafana/grafana-plugin-sdk-go
-go get github.com/grafana/grafana-plugin-sdk-go/build
-go get -u github.com/grafana/grafana-plugin-sdk-go
-go get -u github.com/grafana/grafana-plugin-sdk-go/build
 
 ${NPM} install --global yarn
 ${YARN} install
