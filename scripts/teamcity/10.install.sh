@@ -13,6 +13,8 @@ source "$SCRIPT_DIR/configure.sh"
 nvm_use
 npm_config
 
+mkdir $GOPATH || true
+cp go.mod $GOPATH/.
 
 go get github.com/grafana/grafana-plugin-sdk-go
 go get github.com/grafana/grafana-plugin-sdk-go/build
@@ -22,10 +24,8 @@ go get -u github.com/grafana/grafana-plugin-sdk-go/build
 ${NPM} install --global yarn
 ${YARN} install
 
-rm $GOPATH/go.mod || true
 rm -Rf $GOPATH/src/github.com/magefile
 
-mkdir $GOPATH || true
 cd $GOPATH
 go get -d github.com/magefile/mage
 
