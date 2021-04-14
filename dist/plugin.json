@@ -1,23 +1,39 @@
 {
+  "$schema": "https://raw.githubusercontent.com/grafana/grafana/master/docs/sources/developers/plugins/plugin.schema.json",
   "type": "datasource",
-  "name": "QuasarDB",
+  "name": "qdb-grafana-plugin",
   "id": "quasardb-datasource",
   "metrics": true,
-  "annotations": false,
+  "backend": true,
+  "alerting": true,
+  "executable": "gpx_qdb-grafana-plugin",
   "info": {
-    "version": "3.9.9",
     "description": "Data source for QuasarDB, the high performance timeseries database for the most demanding use cases",
     "author": {
-      "name": "QuasarDB",
+      "name": "quasardb",
       "url": "https://quasardb.net"
     },
+    "keywords": ["quasardb", "backend"],
     "logos": {
       "small": "img/logo.svg",
       "large": "img/logo.svg"
-    }
+    },
+    "links": [
+      {
+        "name": "Website",
+        "url": "https://github.com/bureau14/qdb-grafana-plugin"
+      },
+      {
+        "name": "License",
+        "url": "https://github.com/bureau14/qdb-grafana-plugin/blob/master/LICENSE"
+      }
+    ],
+    "screenshots": [],
+    "version": "3.9.9",
+    "updated": "2021-04-15"
   },
   "dependencies": {
-    "grafanaVersion": "5.x.x",
+    "grafanaDependency": ">=7.0.0",
     "plugins": []
   }
 }

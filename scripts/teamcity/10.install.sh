@@ -1,6 +1,5 @@
 set -eux
 
-# Setup
 SCRIPT_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 source "$SCRIPT_DIR/commands.sh"
 
@@ -14,5 +13,20 @@ source "$SCRIPT_DIR/configure.sh"
 nvm_use
 npm_config
 
-# Install
-npm install
+rm -Rf $GOPATH || true 
+
+mkdir $GOPATH || true
+rm $GOPATH/go.mod || true
+
+${NPM} install --global yarn
+${YARN} install
+
+rm -Rf $GOPATH/src/github.com/magefile
+
+cd $GOPATH
+go get -d github.com/magefile/mage
+
+ls -l $GOPATH/src/github.com/magefile
+
+cd $GOPATH/src/github.com/magefile/mage
+go run bootstrap.go
