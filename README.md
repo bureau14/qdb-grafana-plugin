@@ -1,69 +1,92 @@
-# Grafana Data Source Backend Plugin Template
+# QuasarDB for Grafana
 
-[![Build](https://github.com/grafana/grafana-starter-datasource-backend/workflows/CI/badge.svg)](https://github.com/grafana/grafana-datasource-backend/actions?query=workflow%3A%22CI%22)
+## Introduction
 
-This template is a starting point for building Grafana Data Source Backend Plugins
+[QuasarDB](https://www.quasardb.net/why-quasardb/) is a high performance, limitless, time series database built to handle the most demanding use cases.
 
-## What is Grafana Data Source Backend Plugin?
+This is the official QuasarDB Grafana Data Source plugin. It extends QuasarDB’s support to allow integration with the Grafana analytics and monitoring platform.
 
-Grafana supports a wide range of data sources, including Prometheus, MySQL, and even Datadog. There’s a good chance you can already visualize metrics from the systems you have set up. In some cases, though, you already have an in-house metrics solution that you’d like to add to your Grafana dashboards. Grafana Data Source Plugins enables integrating such solutions with Grafana.
+![QDB Grafana Dashboard](https://doc.quasardb.net/master/_images/qdb_grafana_dash.png)
 
-For more information about backend plugins, refer to the documentation on [Backend plugins](https://grafana.com/docs/grafana/latest/developers/plugins/backend/).
+## Prerequisites
 
-## Getting started
+This documentation assumes you have:
 
-A data source backend plugin consists of both frontend and backend components.
+- Grafana [installed](https://grafana.com/docs/) and running.
+- Both the QuasarDB daemon `qdbd` and the REST API `qdb_rest` running.
 
-### Frontend
+## Installation
 
-1. Install dependencies
+The easiest way to install the plugin is via the Grafana CLI
 
-   ```bash
-   yarn install
-   ```
+```
+grafana-cli --pluginUrl https://github.com/bureau14/qdb-grafana-plugin/archive/3.4.0.zip plugins install qdb-grafana-datasource
+```
 
-2. Build plugin in development mode or run in watch mode
+Alternatively, you can clone the git repository to your Grafana plugins directory (this is usually `/var/lib/grafana/plugins` on Linux-based systems)
 
-   ```bash
-   yarn dev
-   ```
+```
+cd /var/lib/grafana/plugins
+git clone https://github.com/bureau14/qdb-grafana-plugin.git
+```
 
-   or
+Finally, restart your Grafana server and the plugin will be added automatically.
 
-   ```bash
-   yarn watch
-   ```
+## Configuration
 
-3. Build plugin in production mode
+Navigate your web browser to Grafana’s datasource configuration, and click Add data source. You will see QuasarDB as one of the available data sources.
 
-   ```bash
-   yarn build
-   ```
+```
+Note:
+It is recommended to leave Access set to Server (Default) unless you specifically know otherwise.
+```
 
-### Backend
+If your cluster is not secured you just need to fill in the REST API URL (default is [http://localhost:40080](http://localhost:40080)) into the URL field as shown below:
 
-1. Update [Grafana plugin SDK for Go](https://grafana.com/docs/grafana/latest/developers/plugins/backend/grafana-plugin-sdk-for-go/) dependency to the latest minor version:
+![Unsecured Configuration](https://doc.quasardb.net/master/_images/qdb_grafana_plugin_configuration_unsecured.png)
 
-   ```bash
-   go get -u github.com/grafana/grafana-plugin-sdk-go
-   ```
+If your cluster is secured make sure to use the secure REST API URL (default is [https://localhost:40443](https://localhost:40443)) when filling in the URL field.
 
-2. Build backend plugin binaries for Linux, Windows and Darwin:
+```
+Note:
+You may need to check Skip TLS Verify under Auth settings if you are using a self-signed TLS certificate.
+```
 
-   ```bash
-   mage -v
-   ```
+Check the Use Secure Cluster checkbox and fill in the User name and User secret fields using the information found in your user private key file as shown below:
 
-3. List all available Mage targets for additional commands:
+![Unsecured Configuration](https://doc.quasardb.net/master/_images/qdb_grafana_plugin_configuration_secured.png)
 
-   ```bash
-   mage -l
-   ```
+After you are done, click Save & Test and you are ready to starting creating visualizations using QuasarDB.
 
-## Learn more
+## Usage
 
-- [Build a data source backend plugin tutorial](https://grafana.com/tutorials/build-a-data-source-backend-plugin)
-- [Grafana documentation](https://grafana.com/docs/)
-- [Grafana Tutorials](https://grafana.com/tutorials/) - Grafana Tutorials are step-by-step guides that help you make the most of Grafana
-- [Grafana UI Library](https://developers.grafana.com/ui) - UI components to help you build interfaces using Grafana Design System
-- [Grafana plugin SDK for Go](https://grafana.com/docs/grafana/latest/developers/plugins/backend/grafana-plugin-sdk-for-go/)
+You can add a visualization using QuasarDB by selecting the QuasarDB Data Source when creating a new visualization.
+
+```
+Note:
+Which result format you need will be specified by the visualization you are using, but Time series is a most common format.
+```
+
+When defining a query for your visualization you should specify whether you was like to format the result as either `Time series` or a `Table` by selecting an option from the `FORMAT AS` dropdown in the query editor as shown below:
+
+![Query Editor Format As](https://doc.quasardb.net/master/_images/qdb_grafana_query.png)
+
+In additional to normal query syntax you can use the `$__range` and `$__interval` variables provided by Grafana.
+
+For example the query:
+
+```
+SELECT * FROM stocks.apple IN RANGE(2007, 2008) GROUP BY 1h
+```
+
+Could be written to use Grafana's variables like this:
+
+```
+SELECT * FROM stocks.apple IN $__range GROUP BY $__interval
+```
+
+For information on query syntax see our [docs](https://doc.quasardb.net/master/queries/select.html) for more information.
+
+## Troubleshooting
+
+If you have any problems or suggestions please don't hesitate to contact us at [support@quasardb.net](mailto:support@quasardb.net)
