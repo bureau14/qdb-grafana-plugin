@@ -1,44 +1,30 @@
 {
   "name": "qdb-grafana-datasource",
   "version": "3.11.0",
-  "description": "QuasarDB datasource for Grafana",
-  "main": "src/module.js",
-  "author": "Mike Jackson <mike@quasardb.net>",
+  "description": "Data source for QuasarDB, the high performance timeseries database for the most demanding use cases",
+  "scripts": {
+    "build": "grafana-toolkit plugin:build",
+    "test": "grafana-toolkit plugin:test",
+    "dev": "grafana-toolkit plugin:dev",
+    "watch": "grafana-toolkit plugin:dev --watch",
+    "sign": "grafana-toolkit plugin:sign"
+  },
+  "author": "quasardb",
   "license": "ISC",
   "devDependencies": {
-    "atob": "^2.1.2",
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^8.2.3",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-plugin-transform-es2015-modules-systemjs": "^6.24.1",
-    "babel-plugin-transform-inline-environment-variables": "^0.4.0",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.6.1",
-    "braces": ">=2.3.1",
-    "chai": "^4.1.2",
-    "concurrently": "^3.5.1",
-    "cpx": "^1.5.0",
-    "cross-env": "^5.1.4",
-    "eslint": "^4.19.1",
-    "eslint-plugin-import": "^2.10.0",
-    "eslint-plugin-prettier": "^3.1.0",
-    "mocha": "^7.1.2",
-    "node-fetch": "^2.6.0",
-    "prettier": "^1.18.2",
-    "q": "^1.5.1",
-    "qs": "^6.9.4",
-    "regenerator-runtime": "^0.13.0",
-    "rimraf": "^2.6.2"
+    "@grafana/data": "latest",
+    "@grafana/runtime": "latest",
+    "@grafana/toolkit": "latest",
+    "@grafana/ui": "latest",
+    "@types/jest": "^26.0.20",
+    "@types/lodash": "latest",
+    "@types/react-test-renderer": "^17.0.1",
+    "react-test-renderer": "^17.0.1"
   },
-  "scripts": {
-    "start": "npm run build:rm && concurrently \"npm run build:cp --watch\" \"npm run build:js --watch\"",
-    "build": "npm run build:rm && concurrently \"npm run build:cp\" \"npm run build:readme\" \"npm run build:js\"",
-    "build:rm": "rimraf ./dist && mkdir dist ",
-    "build:cp": "cpx -v \"./src/{img/**/*,partials/**/*,plugin.json}\" ./dist",
-    "build:readme": "cpx -v \"README.md\" ./dist",
-    "build:js": "cross-env NODE_ENV=production BABEL_ENV=production babel ./src -d ./dist --source-maps",
-    "lint": "eslint . --cache",
-    "test": "cross-env NODE_ENV=test BABEL_ENV=test mocha --require babel-core/register ./test"
+  "resolutions": {
+    "rxjs": "6.6.3"
+  },
+  "engines": {
+    "node": ">=14"
   }
 }

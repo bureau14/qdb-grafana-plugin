@@ -8,14 +8,15 @@ This is the official QuasarDB Grafana Data Source plugin. It extends QuasarDB’
 
 ![QDB Grafana Dashboard](https://doc.quasardb.net/master/_images/qdb_grafana_dash.png)
 
-
 ## Prerequisites
+
 This documentation assumes you have:
 
-* Grafana [installed](https://grafana.com/docs/) and running.
-* Both the QuasarDB daemon `qdbd` and the REST API `qdb_rest` running.
+- Grafana [installed](https://grafana.com/docs/) and running.
+- Both the QuasarDB daemon `qdbd` and the REST API `qdb_rest` running.
 
 ## Installation
+
 The easiest way to install the plugin is via the Grafana CLI
 
 ```
@@ -85,7 +86,6 @@ SELECT * FROM stocks.apple IN $__range GROUP BY $__interval
 ```
 
 For information on query syntax see our [docs](https://doc.quasardb.net/master/queries/select.html) for more information.
-
 
 ## Troubleshooting
 

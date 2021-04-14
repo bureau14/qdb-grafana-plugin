@@ -1,50 +1,69 @@
-# QuasarDB datasource for Grafana
+# Grafana Data Source Backend Plugin Template
 
-## Installing
+[![Build](https://github.com/grafana/grafana-starter-datasource-backend/workflows/CI/badge.svg)](https://github.com/grafana/grafana-datasource-backend/actions?query=workflow%3A%22CI%22)
 
-```sh
-cd <grafana-root>/data/plugins
-git clone git@github.com:bureau14/qdb-grafana-plugin.git
-```
+This template is a starting point for building Grafana Data Source Backend Plugins
 
-Now start Grafana and add the QuasarDB datasource.
+## What is Grafana Data Source Backend Plugin?
 
-## Development
+Grafana supports a wide range of data sources, including Prometheus, MySQL, and even Datadog. There’s a good chance you can already visualize metrics from the systems you have set up. In some cases, though, you already have an in-house metrics solution that you’d like to add to your Grafana dashboards. Grafana Data Source Plugins enables integrating such solutions with Grafana.
 
-Requires [node](https://nodejs.org/en/)
+For more information about backend plugins, refer to the documentation on [Backend plugins](https://grafana.com/docs/grafana/latest/developers/plugins/backend/).
 
-Install dependencies with npm:
+## Getting started
 
-```sh
-cd <grafana-root>/data/plugins
-git clone https://github.com/bureau14/qdb-grafana-plugin.git
-npm install
-npm run build
-```
+A data source backend plugin consists of both frontend and backend components.
 
-## Testing
+### Frontend
 
-### Download:
-*-${your_platform}-c-api.*!**/*=>qdb
-*-${your_platform}-server.*!bin/*=>qdb/bin
-*-${your_platform}-utils.*!bin/*=>qdb/bin
-*-${your_platform}-rest.*!bin/*=>qdb/bin
+1. Install dependencies
 
-### Test
-Open a bash windows
-```sh 
-export LD_LIBRARY_PATH=qdb/lib # on linux
-export PATH=`pwd`/qdb/bin:$PATH # on windows
+   ```bash
+   yarn install
+   ```
 
-# run the services
-bash scripts/tests/setup/start-services.sh
-bash scripts/tests/rest-setup/start-services.sh
+2. Build plugin in development mode or run in watch mode
 
-# test
-npm run test
+   ```bash
+   yarn dev
+   ```
 
-# stop the services
-bash scripts/tests/setup/stop-services.sh
-bash scripts/tests/rest-setup/stop-services.sh
-```
+   or
 
+   ```bash
+   yarn watch
+   ```
+
+3. Build plugin in production mode
+
+   ```bash
+   yarn build
+   ```
+
+### Backend
+
+1. Update [Grafana plugin SDK for Go](https://grafana.com/docs/grafana/latest/developers/plugins/backend/grafana-plugin-sdk-for-go/) dependency to the latest minor version:
+
+   ```bash
+   go get -u github.com/grafana/grafana-plugin-sdk-go
+   ```
+
+2. Build backend plugin binaries for Linux, Windows and Darwin:
+
+   ```bash
+   mage -v
+   ```
+
+3. List all available Mage targets for additional commands:
+
+   ```bash
+   mage -l
+   ```
+
+## Learn more
+
+- [Build a data source backend plugin tutorial](https://grafana.com/tutorials/build-a-data-source-backend-plugin)
+- [Grafana documentation](https://grafana.com/docs/)
+- [Grafana Tutorials](https://grafana.com/tutorials/) - Grafana Tutorials are step-by-step guides that help you make the most of Grafana
+- [Grafana UI Library](https://developers.grafana.com/ui) - UI components to help you build interfaces using Grafana Design System
+- [Grafana plugin SDK for Go](https://grafana.com/docs/grafana/latest/developers/plugins/backend/grafana-plugin-sdk-for-go/)
