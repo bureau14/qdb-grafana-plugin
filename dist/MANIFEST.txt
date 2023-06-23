@@ -8,32 +8,33 @@ Hash: SHA512
   "signedByOrg": "quasardb",
   "signedByOrgName": "quasardb",
   "plugin": "quasardb-datasource",
-  "version": "3.13.0",
-  "time": 1618389008732,
+  "version": "3.13.7",
+  "time": 1687519797923,
   "keyId": "7e4d0c6a708866e7",
   "files": {
     "CHANGELOG.md": "aaa78be4710ef41d56ddab1edbd180ef9f9adfea2f293109aae925dc33a1b9b3",
+    "LICENSE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "README.md": "05304ce21844989866afc8aa01688922e472e691c7d5361f166d65ce80070d36",
     "gpx_qdb-grafana-plugin_darwin_amd64": "09d8fa40e2089fe6ad29eed200957662b8c7317a3a8bb60c5ca1da6ca06a3fd9",
     "gpx_qdb-grafana-plugin_linux_amd64": "85892c35529eb668551a0fa3ef18c5993513fa3053e457ded9722c05842ddc8a",
     "gpx_qdb-grafana-plugin_linux_arm": "cf9d30e168e2b345c1e609903e10bc2b965aa1743353f37b987b7d2a67f2de86",
     "gpx_qdb-grafana-plugin_linux_arm64": "e3352ea7aff3684e67f04c7f3fe50182b7c76d3602f7ffdc03fdb512c1739613",
     "gpx_qdb-grafana-plugin_windows_amd64.exe": "dc8dac743ed165fadb0d8ffa12b9b23eb91ca91cfc7afd72d6e0089ccb748e87",
     "img/logo.svg": "1defc6f7e585c67657bcfd8fddc599ee7dfa82f8674413f49fa274c2cd453ec6",
-    "LICENSE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
     "module.js": "05bef6c2b3d02dfbfea1b37fbc1d00bc7b26ddad982eb83561576ae4bdff5957",
     "module.js.LICENSE.txt": "0d8f66cd4afb566cb5b7e1540c68f43b939d3eba12ace290f18abc4f4cb53ed0",
     "module.js.map": "421254e4af3353b52a7af5dfd75ebb01c40e7d8d004cb1b59e0ed006a34b08df",
-    "plugin.json": "1388bc429cfb12036e8125e47e17bc2d326212484bfa1205164bc673674843fa",
-    "README.md": "05304ce21844989866afc8aa01688922e472e691c7d5361f166d65ce80070d36"
+    "plugin.json": "449bf34b54259f162659b322483d50ed9106712375d795a9fc557b5a44dd5967"
   }
 }
 -----BEGIN PGP SIGNATURE-----
-Version: OpenPGP.js v4.10.1
+Version: OpenPGP.js v4.10.10
 Comment: https://openpgpjs.org
 
-wqAEARMKAAYFAmB2qBAACgkQfk0ManCIZudrbQIECGZTK7HiAU78UnGgbT1x
-osZGIo/V/UUBnofJbgQ5U/EBLKjlivsj7W4Tf9UDq0ofmXodcK69Byt7cHkC
-pEsND1ICBje1NmYLz1ojoaRRkFD24COsFEzoy4ZFTxji56nDCmDKidZtD7CD
-qmlaZ7Al85WRCBYJMB7wmXrWkxzOiF0SM/+k
-=0Pnc
+wrkEARMKAAYFAmSVgjYAIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
+cIhm5yvWAgkBe6GC0wrQeovzkfKJ1XQaGxh6o/a7uVDYUzbyW3wyilIAqtsc
+j51tOupgsvthH5Si8yMEa6/iZCE0Gw60JsZSeb8CCQHPcE+aZ/PGUzB+HPQh
+8qG09S0NTipgFd0or/1Pa8QvO+m44YVzjjjNOoCNq/Ep8Qcb40haMxIGOZ56
+AiUJ5kUSUQ==
+=8Pty
 -----END PGP SIGNATURE-----
