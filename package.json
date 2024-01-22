@@ -1,6 +1,6 @@
 {
   "name": "quasardb-qdb-grafana-plugin",
-  "version": "3.14.1",
+  "version": "3.14.2",
   "description": "Qdb Grafana Plugin",
   "scripts": {
     "build": "grafana-toolkit plugin:build",
