@@ -4,6 +4,7 @@ import { DataQueryRequest, DataQueryResponse, DefaultTimeRange } from '@grafana/
 import { QdbDataSourceOptions, QdbQuery } from './types';
 import { getTemplateSrv } from '@grafana/runtime';
 import { Observable } from 'rxjs';
+import { v4 as uuidv4 } from 'uuid';
 
 // This is taken from https://github.com/grafana/grafana/blob/master/public/app/features/variables/utils.ts#L16
 const variableRegex = /\$(\w+)|\[\[([\s\S]+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
@@ -115,21 +116,25 @@ export function buildQueryTemplate(sql: any, variables: any) {
 }
 
 export function transformScopedVars(request: DataQueryRequest<QdbQuery>) {
-  const from = request.range.from.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS');
-  const to = request.range.to.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS');
+  if (request.range) {
+    const from = request.range.from.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS');
+    const to = request.range.to.utc().format('YYYY-MM-DD[T]HH:mm:ss.SSSSSSSSS');
 
-  const vars: any = {
-    __range: `RANGE(${from}, ${to})`,
-    __interval: `${request.intervalMs}ms`,
-    __sensor: ['asd', 'bsd'],
-  };
+    const vars: any = {
+      __range: `RANGE(${from}, ${to})`,
+      __interval: `${request.intervalMs}ms`,
+      __sensor: ['asd', 'bsd'],
+    };
 
-  return {
-    ...request.scopedVars,
-    ...Object.keys(vars)
-      .map(key => ({ [key]: { text: vars[key], value: vars[key] } }))
-      .reduce((x, y) => ({ ...y, ...x }), {}),
-  };
+    return {
+      ...request.scopedVars,
+      ...Object.keys(vars)
+        .map(key => ({ [key]: { text: vars[key], value: vars[key] } }))
+        .reduce((x, y) => ({ ...y, ...x }), {}),
+    };
+  } else {
+    return request;
+  }
 }
 
 export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOptions> {
@@ -157,10 +162,17 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   }
 
   async metricFindQuery?(queryText: string, options?: any): Promise<MetricFindValue[]> {
+    // todo
+    // what options hold, why id there is no id(?)
+    // what does tagQuery do, why doesnt it work?
+    // look closer at DataQueryRequest, what it does with id
+
+    options.id = uuidv4().toString();
+
     let query: QdbQuery = {
       refId: options.id,
       queryText: queryText,
-      tagQuery: true,
+      tagQuery: false,
     };
 
     let req: DataQueryRequest<QdbQuery> = {
@@ -170,18 +182,27 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
       range: DefaultTimeRange,
       scopedVars: options,
       timezone: DefaultTimeZone,
-      app: '',
+      app: 'grafana-plugin',
       startTime: 0,
       targets: [query],
     };
 
     const response = await this.query(req);
     return response.toPromise().then(res => {
+      console.log('response', res);
       const values: MetricFindValue[] = [];
-      let field = res.data[0].fields[0];
-      if (field) {
-        for (let i = 0; i < field.values.length; i++) {
-          values.push({ text: '' + field.values.get(i) });
+      if (res.data.length === 0) {
+        return values;
+      }
+      let fields = res.data[0].fields;
+      if (fields) {
+        if (fields.length === 1) {
+          fields = fields[0];
+        } else {
+          return values;
+        }
+        for (let i = 0; i < fields.values.length; i++) {
+          values.push({ text: '' + fields.values.get(i) });
         }
       }
       return values;
