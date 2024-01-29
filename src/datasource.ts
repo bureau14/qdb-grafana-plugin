@@ -198,15 +198,16 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
       }
       const values: MetricFindValue[] = [];
       if (res.data.length === 0) {
+        // empty response from query
         return values;
       }
       let fields = res.data[0].fields;
       if (fields) {
-        if (fields.length === 1) {
-          fields = fields[0];
-        } else {
-          return values;
+        // query variables should contain only one column
+        if (fields.length !== 1) {
+          throw new Error(`Query should return only one column, retured columns ${fields.length}`);
         }
+        fields = fields[0];
         for (let i = 0; i < fields.values.length; i++) {
           values.push({ text: '' + fields.values.get(i) });
         }
