@@ -162,17 +162,20 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   }
 
   async metricFindQuery?(queryText: string, options?: any): Promise<MetricFindValue[]> {
-    // todo
-    // what options hold, why id there is no id(?)
-    // what does tagQuery do, why doesnt it work?
-    // look closer at DataQueryRequest, what it does with id
+    if (options.id === null || options.id === undefined) {
+      options.id = uuidv4().toString();
+    }
 
-    options.id = uuidv4().toString();
+    let isTagQuery = false;
+    const tagQueryPattern = /^show\s+tags\s+where\s+tag\s+~\s+(\S+)$/;
+    if (tagQueryPattern.exec(queryText)) {
+      isTagQuery = true;
+    }
 
     let query: QdbQuery = {
       refId: options.id,
       queryText: queryText,
-      tagQuery: false,
+      tagQuery: isTagQuery,
     };
 
     let req: DataQueryRequest<QdbQuery> = {
@@ -190,6 +193,9 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     const response = await this.query(req);
     return response.toPromise().then(res => {
       console.log('response', res);
+      if (res.error) {
+        throw new Error(res.error.message);
+      }
       const values: MetricFindValue[] = [];
       if (res.data.length === 0) {
         return values;
