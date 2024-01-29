@@ -168,7 +168,7 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     }
 
     let isTagQuery = false;
-    const tagQueryPattern = /^show\s+tags\s+where\s+tag\s+~\s+(\S+)$/; // e.g: show tags where tag ~ some-tag
+    const tagQueryPattern = /^show\s+tags.*/; // e.g: `show tags where tag ~ some-tag`, `show tags`
     if (tagQueryPattern.exec(queryText)) {
       isTagQuery = true;
     }
@@ -193,7 +193,6 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
 
     const response = await this.query(req);
     return response.toPromise().then(res => {
-      console.log('response', res);
       if (res.error) {
         throw new Error(res.error.message);
       }
