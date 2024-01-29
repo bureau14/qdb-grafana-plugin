@@ -162,12 +162,13 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
   }
 
   async metricFindQuery?(queryText: string, options?: any): Promise<MetricFindValue[]> {
+    // id is needed to retrive query result
     if (options.id === null || options.id === undefined) {
       options.id = uuidv4().toString();
     }
 
     let isTagQuery = false;
-    const tagQueryPattern = /^show\s+tags\s+where\s+tag\s+~\s+(\S+)$/;
+    const tagQueryPattern = /^show\s+tags\s+where\s+tag\s+~\s+(\S+)$/; // e.g: show tags where tag ~ some-tag
     if (tagQueryPattern.exec(queryText)) {
       isTagQuery = true;
     }
