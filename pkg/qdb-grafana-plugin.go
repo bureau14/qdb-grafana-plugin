@@ -422,10 +422,13 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		)
 	}
 	log.DefaultLogger.Debug(fmt.Sprintf("Row count: %d", rowCount))
-
-	// add the frames to the response
-	response.Frames = append(response.Frames, frame)
-
+	isGroupBy, columnIndex := IsGroupByQuery(qm.QueryText, frame.Fields)
+	if !isGroupBy {
+		response.Frames = append(response.Frames, frame)
+	} else {
+		res := SplitByUniqueColumnValues(frame, columnIndex)
+		response.Frames = append(response.Frames, res...)
+	}
 	return &response, nil
 }
 
