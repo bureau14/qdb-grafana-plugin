@@ -12,12 +12,13 @@
   "author": "quasardb",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@grafana/data": "latest",
-    "@grafana/runtime": "latest",
-    "@grafana/toolkit": "latest",
-    "@grafana/ui": "latest",
+    "@grafana/data": "7.4.0",
+    "@grafana/runtime": "7.4.0",
+    "@grafana/toolkit": "7.4.0",
+    "@grafana/ui": "7.4.0",
     "@types/jest": "^26.0.20",
     "@types/lodash": "latest",
+    "@types/uuid": "^9.0.8",
     "@types/react-test-renderer": "^17.0.1",
     "react-test-renderer": "^17.0.1"
   },
@@ -26,8 +27,5 @@
   },
   "engines": {
     "node": ">=14"
-  },
-  "dependencies": {
-    "@types/uuid": "^9.0.8"
   }
 }
