@@ -1,6 +1,6 @@
 import { DataSourceInstanceSettings, DefaultTimeZone, MetricFindValue } from '@grafana/data';
 import { DataSourceWithBackend } from '@grafana/runtime';
-import { DataQueryRequest, DataQueryResponse, DefaultTimeRange } from '@grafana/data';
+import { DataQueryRequest, DataQueryResponse, getDefaultTimeRange } from '@grafana/data';
 import { QdbDataSourceOptions, QdbQuery } from './types';
 import { getTemplateSrv } from '@grafana/runtime';
 import { Observable } from 'rxjs';
@@ -8,6 +8,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 // This is taken from https://github.com/grafana/grafana/blob/master/public/app/features/variables/utils.ts#L16
 const variableRegex = /\$(\w+)|\[\[([\s\S]+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
+
+// constructs query for metricFindQuery from strings in format table.column
+export function createQueryFromTableColumnOnly(query: string) {
+  const constructQueryPattern = /^.*\..+$/;
+  if (!constructQueryPattern.exec(query)) {
+    return query;
+  }
+  let queryArgs = query.split('.');
+  return `SELECT ${queryArgs[1]} FROM ${queryArgs[0]} GROUP BY ${queryArgs[1]}`;
+}
 
 export function extractMacrosFunction(query: any, macro: any) {
   const macroStart = `${macro}(`;
@@ -79,7 +89,7 @@ export function extractMacroVariables(template: any, dashVars: any) {
 export function renderMacroTemplate(template: any, join: any, variables: any) {
   // we only want macros that have a value
   let macroVariables = extractMacroVariables(template, variables);
-  macroVariables = macroVariables.filter(m => !!m.value);
+  macroVariables = macroVariables.filter((m) => !!m.value);
   // all macrovariables value array length should be the same
 
   let result = [];
@@ -129,7 +139,7 @@ export function transformScopedVars(request: DataQueryRequest<QdbQuery>) {
     return {
       ...request.scopedVars,
       ...Object.keys(vars)
-        .map(key => ({ [key]: { text: vars[key], value: vars[key] } }))
+        .map((key) => ({ [key]: { text: vars[key], value: vars[key] } }))
         .reduce((x, y) => ({ ...y, ...x }), {}),
     };
   } else {
@@ -150,25 +160,36 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
       return super.query(request);
     }
     request.targets.map(
-      x =>
+      (x) =>
         (x.queryText = this.templateSrv.replace(
           buildQueryTemplate(x.queryText ?? '', this.templateSrv.getVariables()),
           transformScopedVars(request)
         ))
     );
-    request.targets.map(x => (x.queryText = this.templateSrv.replace(x.queryText ?? '', transformScopedVars(request))));
-
+    request.targets.map(
+      (x) => (x.queryText = this.templateSrv.replace(x.queryText ?? '', transformScopedVars(request)))
+    );
+    console.log('query sent:');
+    console.log(request.targets[0].queryText);
     return super.query(request);
   }
 
+  // this method adds support for dynamic query variables
+  // https://grafana.com/developers/plugin-tools/create-a-plugin/extend-a-plugin/add-support-for-variables
   async metricFindQuery?(queryText: string, options?: any): Promise<MetricFindValue[]> {
+    queryText = createQueryFromTableColumnOnly(queryText);
     // id is needed to retrive query result
+    // query responses are stored in a hashmap, without id response data was empty
+    // see Query, QueryData in pkg/qdb-grafana-plugin.go
+    console.log('options:');
+    console.log(options);
     if (options.id === null || options.id === undefined) {
       options.id = uuidv4().toString();
     }
 
+    // tag queries go to diffrent endpoint in qdb rest api, they need to be identified before sending query
     let isTagQuery = false;
-    const tagQueryPattern = /^show\s+tags.*/; // e.g: `show tags where tag ~ some-tag`, `show tags`
+    const tagQueryPattern = /^show\s+tags.*/i; // e.g: `show tags where tag ~ some-tag`, `show tags`
     if (tagQueryPattern.exec(queryText)) {
       isTagQuery = true;
     }
@@ -183,7 +204,7 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
       requestId: options.id,
       interval: '5m',
       intervalMs: 30000,
-      range: DefaultTimeRange,
+      range: getDefaultTimeRange(),
       scopedVars: options,
       timezone: DefaultTimeZone,
       app: 'grafana-plugin',
@@ -191,14 +212,18 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
       targets: [query],
     };
 
+    // make request, process output
     const response = await this.query(req);
-    return response.toPromise().then(res => {
+    return response.toPromise().then((res) => {
+      console.log('response');
+      console.log(res.data); // this is visible only when used with yarn dev
       if (res.error) {
+        // throw new error to ui
         throw new Error(res.error.message);
       }
       const values: MetricFindValue[] = [];
       if (res.data.length === 0) {
-        // empty response from query
+        // empty query response shouldnt throw error to user
         return values;
       }
       let fields = res.data[0].fields;
@@ -209,8 +234,16 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
         }
         fields = fields[0];
         for (let i = 0; i < fields.values.length; i++) {
-          values.push({ text: '' + fields.values.get(i) });
+          // in response return column_name = value, this is so it can be easily used in queries
+          if (fields.type === 'string') {
+            values.push({ text: fields.values.get(i), value: `${fields.name}=` + "'" + fields.values.get(i) + "'" });
+          } else {
+            values.push({ text: fields.values.get(i), value: `${fields.name}=` + fields.values.get(i) });
+          }
         }
+      }
+      if (options.variable.includeAll) {
+        values.push({ text: 'Include all', value: '1=1' });
       }
       return values;
     });
