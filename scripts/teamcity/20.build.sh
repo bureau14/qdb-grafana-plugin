@@ -10,4 +10,6 @@ export CGO_ENABLED=0
 rm -Rf dist
 mage -v
 
+${YARN} test -u
+
 ${YARN} build
