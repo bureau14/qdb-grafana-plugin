@@ -147,6 +147,19 @@ export function transformScopedVars(request: DataQueryRequest<QdbQuery>) {
   }
 }
 
+export function joinWithOr(query: string) {
+  let argRegex = /\{([^}]*)\}/g; // match all substrings like {...}
+  query = query.replace(argRegex, (match) => {
+    // split args, remove trailing chars, join with OR
+    let keyValuePairs = match.slice(1, -1).split(',');
+    if (keyValuePairs) {
+      return keyValuePairs.join(' OR ');
+    }
+    return query;
+  });
+  return query;
+}
+
 export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOptions> {
   templateSrv: any;
 
@@ -160,17 +173,15 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
       return super.query(request);
     }
     request.targets.map(
-      (x) =>
+      (x) => (
         (x.queryText = this.templateSrv.replace(
           buildQueryTemplate(x.queryText ?? '', this.templateSrv.getVariables()),
           transformScopedVars(request)
-        ))
+        )),
+        (x.queryText = joinWithOr(x.queryText ?? '')) // formating multiple variables
+      )
     );
-    request.targets.map(
-      (x) => (x.queryText = this.templateSrv.replace(x.queryText ?? '', transformScopedVars(request)))
-    );
-    console.log('query sent:');
-    console.log(request.targets[0].queryText);
+    console.log('query sent:', request.targets[0].queryText);
     return super.query(request);
   }
 
@@ -241,9 +252,6 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
             values.push({ text: fields.values.get(i), value: `${fields.name}=` + fields.values.get(i) });
           }
         }
-      }
-      if (options.variable.includeAll) {
-        values.push({ text: 'Include all', value: '1=1' });
       }
       return values;
     });
