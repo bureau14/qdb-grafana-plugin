@@ -19,6 +19,7 @@ export function createQueryFromTableColumnOnly(query: string) {
   return `SELECT ${queryArgs[1]} FROM ${queryArgs[0]} GROUP BY ${queryArgs[1]}`;
 }
 
+// extracts multiple variables from ${variable} when its included in macro
 export function extractMacrosFunction(query: any, macro: any) {
   const macroStart = `${macro}(`;
 
@@ -118,6 +119,10 @@ export function buildSqlTemplate(sql: string, macro: string, replacer: string, v
   return sql;
 }
 
+// formats variables with coma, and, or depending on variable
+// e.g:
+// var1 = column = val1, column = val2
+// $__and(${var1}) => column = val1 AND column = val2
 export function buildQueryTemplate(sql: any, variables: any) {
   sql = buildSqlTemplate(sql, '$__comma', ', ', variables);
   sql = buildSqlTemplate(sql, '$__or', ' OR ', variables);
@@ -147,19 +152,6 @@ export function transformScopedVars(request: DataQueryRequest<QdbQuery>) {
   }
 }
 
-export function joinWithOr(query: string) {
-  let argRegex = /\{([^}]*)\}/g; // match all substrings like {...}
-  query = query.replace(argRegex, (match) => {
-    // split args, remove trailing chars, join with OR
-    let keyValuePairs = match.slice(1, -1).split(',');
-    if (keyValuePairs) {
-      return keyValuePairs.join(' OR ');
-    }
-    return query;
-  });
-  return query;
-}
-
 export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOptions> {
   templateSrv: any;
 
@@ -177,8 +169,7 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
         (x.queryText = this.templateSrv.replace(
           buildQueryTemplate(x.queryText ?? '', this.templateSrv.getVariables()),
           transformScopedVars(request)
-        )),
-        (x.queryText = joinWithOr(x.queryText ?? '')) // formating multiple variables
+        ))
       )
     );
     console.log('query sent:', request.targets[0].queryText);
