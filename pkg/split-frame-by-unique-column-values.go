@@ -14,11 +14,20 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) ([]interface{}, erro
 	// Create a map to store unique values
 	uniqueValues := make(map[interface{}]int)
 	// Iterate through the rows and collect unique values from the specified column
+	// values are converted from pointers to their types for later comparasion
 	rows := frame.Rows()
 	for i := 0; i < rows; i++ {
 		value := frame.At(columnId, i)
-		log.DefaultLogger.Info(fmt.Sprint(value))
-		uniqueValues[value] = 0
+		switch typeValue := value.(type) {
+		case *string:
+			uniqueValues[*typeValue] = 0
+		case *int64:
+			uniqueValues[*typeValue] = 0
+		case *float64:
+			uniqueValues[*typeValue] = 0
+		default:
+			uniqueValues[nil] = 0
+		}
 	}
 
 	// Convert the unique values map to a slice
@@ -41,21 +50,26 @@ func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
 		groupByArgs := strings.Split(isGroupByRegex.FindStringSubmatch(query)[1], ",")
 		idx := 0
 		for i, arg := range groupByArgs {
-			arg = strings.TrimSpace(arg)
+			groupByArgs[i] = strings.TrimSpace(arg)
 			// $__interval is a duaration of time as a string
 			// if current arg is parasable its $__interval, skip it
-			_, err := time.ParseDuration(arg)
+			_, err := time.ParseDuration(groupByArgs[i])
 			if err != nil {
 				idx = i
 				break
 			}
 		}
+		log.DefaultLogger.Debug("comapring columns")
 		for colId, colName := range fields {
+			colName.Name = strings.TrimSpace(colName.Name)
+			log.DefaultLogger.Debug(fmt.Sprintf("%d", colId))
+			log.DefaultLogger.Debug(fmt.Sprintf("'%s'", colName.Name))
+			log.DefaultLogger.Debug(fmt.Sprintf("'%s'", groupByArgs[idx]))
 			if colName.Name == groupByArgs[idx] {
 				return true, colId, groupByArgs[idx]
 			}
 		}
-		log.DefaultLogger.Warn(fmt.Sprintf("Cant find %s column", groupByArgs[idx]))
+		log.DefaultLogger.Warn(fmt.Sprintf("Cant find %s column, defaulting to standard formating", groupByArgs[idx]))
 	}
 	return false, 0, ""
 }
@@ -63,7 +77,17 @@ func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
 func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) (*data.Frame, error) {
 	// returns new frame where all rows match typeValue in given column
 	filterCondition := func(i interface{}) (bool, error) {
-		return i == typeValue, nil
+		switch t := i.(type) {
+		case *string:
+			return *t == typeValue, nil
+		case *int64:
+			return *t == typeValue, nil
+		case *float64:
+			return *t == typeValue, nil
+		default:
+			return false, nil
+		}
+
 	}
 	filteredDataFrame, err := df.FilterRowsByField(columnId, filterCondition)
 	if err != nil {
@@ -74,21 +98,11 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 }
 
 func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) (splitFrames []*data.Frame) {
-	// return array of data.Frame
+	// return array of data.Frame grouped by unique values
 	uniqueTypes, _ := GetUniqueColumnValues(frame, columnIndex)
 	for _, typeValue := range uniqueTypes {
 		tmpFrame, _ := FilterDataFrameByType(frame, typeValue, columnIndex)
-
-		switch typeValue := typeValue.(type) {
-		case *string:
-			tmpFrame.Name = fmt.Sprintf("%s %s,", name, *typeValue)
-		case *int64:
-			tmpFrame.Name = fmt.Sprintf("%s %d,", name, *typeValue)
-		case *float64:
-			tmpFrame.Name = fmt.Sprintf("%s %e,", name, *typeValue)
-		default:
-			tmpFrame.Name = fmt.Sprintf("%s %s,", name, "")
-		}
+		tmpFrame.Name = fmt.Sprintf("%s %s,", name, typeValue)
 		splitFrames = append(splitFrames, tmpFrame)
 	}
 	return splitFrames
