@@ -87,6 +87,7 @@ export function extractMacroVariables(template: any, dashVars: any) {
   });
 }
 
+// replaces variables with their values, returns string joined by joins string passed as argument
 export function renderMacroTemplate(template: any, join: any, variables: any) {
   // we only want macros that have a value
   let macroVariables = extractMacroVariables(template, variables);
@@ -113,6 +114,7 @@ export function buildSqlTemplate(sql: string, macro: string, replacer: string, v
   if (macros.length) {
     sql = macros.reduce((query: string, mc: { template: any; start: any; end: number }) => {
       const template = renderMacroTemplate(mc.template, replacer, variables);
+      // replace macro and variable inside with coresponding sql keywords
       return query.substring(0, mc.start) + template + query.substring(mc.end + 1);
     }, sql);
   }
@@ -164,13 +166,13 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     if (request.targets[0].tagQuery === true) {
       return super.query(request);
     }
+    // replace variables with their values
     request.targets.map(
-      (x) => (
+      (x) =>
         (x.queryText = this.templateSrv.replace(
           buildQueryTemplate(x.queryText ?? '', this.templateSrv.getVariables()),
           transformScopedVars(request)
         ))
-      )
     );
     console.log('query sent:', request.targets[0].queryText);
     return super.query(request);
