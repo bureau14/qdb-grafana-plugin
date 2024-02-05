@@ -297,7 +297,7 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
           if (fields.type === 'string') {
             if (query.tagQuery === true) {
               values.push({ text: fields.values.get(i), value: fields.values.get(i) });
-            } else if (fields.name === '$table') {
+            } else if (fields.name === '$table' || queryText.match(/^find\(tag=.*\)$/)) {
               values.push({ text: fields.values.get(i), value: formatTableName(fields.values.get(i)) });
             } else {
               values.push({ text: fields.values.get(i), value: `${fields.name}=` + "'" + fields.values.get(i) + "'" });
