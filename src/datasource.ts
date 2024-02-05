@@ -44,10 +44,17 @@ export function replaceVariablesWithValues(query: string, variables: any) {
   }
   query = query.replace(
     variableRegex,
-    (match, dollarKey, doubleBracketKey, doubleBracketValue, curlyKey, varProperty, varValue) => {
-      let key = dollarKey || doubleBracketKey || doubleBracketValue || curlyKey || varProperty || varValue;
+    (match, r1, r2, r3, r4, r5, r6) => {
+      let key = r1 || r2 || r3 || r4 || r5 || r6; // get key from variableRegex match that is found
       let values = variableMap.get(key);
-      return values?.join(' OR ') || match;
+      if (values) {
+        if (values.length > 1) {
+          return `(${values.join(' OR ')})`;
+        } else {
+          return values[0];
+        }
+      }
+      return match;
     }
   );
   return query;
@@ -159,11 +166,14 @@ export function renderMacroTemplate(template: any, join: any, variables: any) {
   return result.join(join);
 }
 
-export function buildSqlTemplate(sql: string, macro: string, replacer: string, variables: any) {
+export function buildSqlTemplate(sql: string, macro: string, replacer: string, variables: any, addParentheses = true) {
   let macros = extractMacrosFunction(sql, macro);
   if (macros.length) {
     sql = macros.reduce((query: string, mc: { template: any; start: any; end: number }) => {
-      const template = renderMacroTemplate(mc.template, replacer, variables);
+      let template = renderMacroTemplate(mc.template, replacer, variables);
+      if (addParentheses === true) {
+        template = `(${template})`;
+      }
       // replace macro and variable inside with coresponding sql keywords
       return query.substring(0, mc.start) + template + query.substring(mc.end + 1);
     }, sql);
@@ -177,9 +187,9 @@ export function buildSqlTemplate(sql: string, macro: string, replacer: string, v
 // $__and(${var1}) => column = val1 AND column = val2
 export function buildQueryTemplate(sql: any, variables: any) {
   // handle variables inside macros
-  sql = buildSqlTemplate(sql, '$__comma', ', ', variables);
-  sql = buildSqlTemplate(sql, '$__or', ' OR ', variables);
-  sql = buildSqlTemplate(sql, '$__and', ' AND ', variables);
+  sql = buildSqlTemplate(sql, '$__comma', ', ', variables, false);
+  sql = buildSqlTemplate(sql, '$__or', ' OR ', variables, true);
+  sql = buildSqlTemplate(sql, '$__and', ' AND ', variables, true);
   // handle variables not included in any macros
   sql = replaceVariablesWithValues(sql, variables);
   return sql;
