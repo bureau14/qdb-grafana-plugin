@@ -19,16 +19,17 @@ export function createQueryFromTableColumnOnly(query: string) {
   return `SELECT ${queryArgs[1]} FROM ${queryArgs[0]} GROUP BY ${queryArgs[1]}`;
 }
 
-export function replaceVariablesWithValuesOutsideMacros(query: string, variables: any) {
+export function replaceVariablesWithValues(query: string, variables: any) {
   // replace variable name with values splitted with or
   // handles values not included in any of the defined macros
+  let variableMap: Map<string, string[]> = new Map();
   for (let i = 0; i < variables.length; i++) {
     let values = [];
     var row = variables[i];
     for (let j = 0; j < row.options.length; j++) {
       if (row.options[j].selected) {
         if (row.options[j].value === '$__all') {
-          if (variables[i].allValue === null) {
+          if (variables[i].allValue === null || variables[i].allValue === '') {
             values = ['1=1'];
           } else {
             values = [variables[i].allValue];
@@ -39,12 +40,24 @@ export function replaceVariablesWithValuesOutsideMacros(query: string, variables
         }
       }
     }
-    if (values.length > 0) {
-      let toReplace = new RegExp(`\\$${row.id}`, 'g');
-      query = query.replace(toReplace, values.join(' OR '));
-    }
+    variableMap.set(row.id, values);
   }
+  query = query.replace(
+    variableRegex,
+    (match, dollarKey, doubleBracketKey, doubleBracketValue, curlyKey, varProperty, varValue) => {
+      let key = dollarKey || doubleBracketKey || doubleBracketValue || curlyKey || varProperty || varValue;
+      let values = variableMap.get(key);
+      return values?.join(' OR ') || match;
+    }
+  );
   return query;
+}
+
+export function formatTableName(tableName: string) {
+  if (tableName.includes('.') || tableName.includes('/')) {
+    tableName = '"' + tableName + '"';
+  }
+  return tableName;
 }
 
 // extracts multiple variables from ${variable} when its included in macro
@@ -168,7 +181,7 @@ export function buildQueryTemplate(sql: any, variables: any) {
   sql = buildSqlTemplate(sql, '$__or', ' OR ', variables);
   sql = buildSqlTemplate(sql, '$__and', ' AND ', variables);
   // handle variables not included in any macros
-  sql = replaceVariablesWithValuesOutsideMacros(sql, variables);
+  sql = replaceVariablesWithValues(sql, variables);
   return sql;
 }
 
@@ -278,14 +291,23 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
         }
         fields = fields[0];
         for (let i = 0; i < fields.values.length; i++) {
-          // in response return column_name = value, this is so it can be easily used in queries
+          // queries are returned as column_name = value
+          // tag queries are formated as value only
+          // queries returning $table column are returned as value only
           if (fields.type === 'string') {
-            values.push({ text: fields.values.get(i), value: `${fields.name}=` + "'" + fields.values.get(i) + "'" });
+            if (query.tagQuery === true) {
+              values.push({ text: fields.values.get(i), value: fields.values.get(i) });
+            } else if (fields.name === '$table') {
+              values.push({ text: fields.values.get(i), value: formatTableName(fields.values.get(i)) });
+            } else {
+              values.push({ text: fields.values.get(i), value: `${fields.name}=` + "'" + fields.values.get(i) + "'" });
+            }
           } else {
             values.push({ text: fields.values.get(i), value: `${fields.name}=` + fields.values.get(i) });
           }
         }
       }
+      console.log('returning variables: ', values);
       return values;
     });
   }
