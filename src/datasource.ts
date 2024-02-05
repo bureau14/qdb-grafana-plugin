@@ -19,44 +19,12 @@ export function createQueryFromTableColumnOnly(query: string) {
   return `SELECT ${queryArgs[1]} FROM ${queryArgs[0]} GROUP BY ${queryArgs[1]}`;
 }
 
-export function replaceVariablesWithValues(query: string, variables: any) {
+export function replaceVariablesWithValuesOutsideMacros(query: string, variables: any) {
   // replace variable name with values splitted with or
   // handles values not included in any of the defined macros
-  let variableMap: Map<string, string[]> = new Map();
-  for (let i = 0; i < variables.length; i++) {
-    let values = [];
-    var row = variables[i];
-    for (let j = 0; j < row.options.length; j++) {
-      if (row.options[j].selected) {
-        if (row.options[j].value === '$__all') {
-          if (variables[i].allValue === null || variables[i].allValue === '') {
-            values = ['1=1'];
-          } else {
-            values = [variables[i].allValue];
-          }
-          break;
-        } else {
-          values.push(row.options[j].value);
-        }
-      }
-    }
-    variableMap.set(row.id, values);
-  }
-  query = query.replace(
-    variableRegex,
-    (match, r1, r2, r3, r4, r5, r6) => {
-      let key = r1 || r2 || r3 || r4 || r5 || r6; // get key from variableRegex match that is found
-      let values = variableMap.get(key);
-      if (values) {
-        if (values.length > 1) {
-          return `(${values.join(' OR ')})`;
-        } else {
-          return values[0];
-        }
-      }
-      return match;
-    }
-  );
+  query = query.replace(variableRegex, (match, _) => {
+    return '(' + renderMacroTemplate(match, ' OR ', variables) + ')';
+  });
   return query;
 }
 
@@ -191,7 +159,7 @@ export function buildQueryTemplate(sql: any, variables: any) {
   sql = buildSqlTemplate(sql, '$__or', ' OR ', variables, true);
   sql = buildSqlTemplate(sql, '$__and', ' AND ', variables, true);
   // handle variables not included in any macros
-  sql = replaceVariablesWithValues(sql, variables);
+  sql = replaceVariablesWithValuesOutsideMacros(sql, variables);
   return sql;
 }
 
