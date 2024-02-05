@@ -19,6 +19,34 @@ export function createQueryFromTableColumnOnly(query: string) {
   return `SELECT ${queryArgs[1]} FROM ${queryArgs[0]} GROUP BY ${queryArgs[1]}`;
 }
 
+export function replaceVariablesWithValuesOutsideMacros(query: string, variables: any) {
+  // replace variable name with values splitted with or
+  // handles values not included in any of the defined macros
+  for (let i = 0; i < variables.length; i++) {
+    let values = [];
+    var row = variables[i];
+    for (let j = 0; j < row.options.length; j++) {
+      if (row.options[j].selected) {
+        if (row.options[j].value === '$__all') {
+          if (variables[i].allValue === null) {
+            values = ['1=1'];
+          } else {
+            values = [variables[i].allValue];
+          }
+          break;
+        } else {
+          values.push(row.options[j].value);
+        }
+      }
+    }
+    if (values.length > 0) {
+      let toReplace = new RegExp(`\\$${row.id}`, 'g');
+      query = query.replace(toReplace, values.join(' OR '));
+    }
+  }
+  return query;
+}
+
 // extracts multiple variables from ${variable} when its included in macro
 export function extractMacrosFunction(query: any, macro: any) {
   const macroStart = `${macro}(`;
@@ -73,6 +101,15 @@ export function extractMacroVariables(template: any, dashVars: any) {
       let value = dashVar.current.value || [];
       value = Array.isArray(value) ? value : [value];
 
+      // set default value for allValue if its not set by the user
+      if (value.length === 1 && value[0] === '$__all') {
+        if (dashVar.allValue === null) {
+          value = ['1=1'];
+        } else {
+          value = [dashVar.allValue];
+        }
+      }
+
       return {
         fullName: fullVariableName,
         name: variableName,
@@ -126,9 +163,12 @@ export function buildSqlTemplate(sql: string, macro: string, replacer: string, v
 // var1 = column = val1, column = val2
 // $__and(${var1}) => column = val1 AND column = val2
 export function buildQueryTemplate(sql: any, variables: any) {
+  // handle variables inside macros
   sql = buildSqlTemplate(sql, '$__comma', ', ', variables);
   sql = buildSqlTemplate(sql, '$__or', ' OR ', variables);
   sql = buildSqlTemplate(sql, '$__and', ' AND ', variables);
+  // handle variables not included in any macros
+  sql = replaceVariablesWithValuesOutsideMacros(sql, variables);
   return sql;
 }
 
