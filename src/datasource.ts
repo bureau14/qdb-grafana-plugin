@@ -19,15 +19,7 @@ export function createQueryFromTableColumnOnly(query: string) {
   return `SELECT ${queryArgs[1]} FROM ${queryArgs[0]} GROUP BY ${queryArgs[1]}`;
 }
 
-export function replaceVariablesWithValuesOutsideMacros(query: string, variables: any) {
-  // replace variable name with values splitted with or
-  // handles values not included in any of the defined macros
-  query = query.replace(variableRegex, (match, _) => {
-    return '(' + renderMacroTemplate(match, ' OR ', variables) + ')';
-  });
-  return query;
-}
-
+// format table name for use in the queries
 export function formatTableName(tableName: string) {
   if (tableName.includes('.') || tableName.includes('/')) {
     tableName = '"' + tableName + '"';
@@ -35,7 +27,7 @@ export function formatTableName(tableName: string) {
   return tableName;
 }
 
-// extracts multiple variables from ${variable} when its included in macro
+// extracts variable names and macros indexes from query
 export function extractMacrosFunction(query: any, macro: any) {
   const macroStart = `${macro}(`;
 
@@ -69,6 +61,8 @@ export function extractMacrosFunction(query: any, macro: any) {
   return matches;
 }
 
+// extract variable name, values
+// if includeAll was not set by user its replaced with default value
 export function extractMacroVariables(template: any, dashVars: any) {
   const macroVariables = Array.from(template.matchAll(variableRegex));
   return macroVariables.map((match: any) => {
@@ -112,7 +106,7 @@ export function extractMacroVariables(template: any, dashVars: any) {
   });
 }
 
-// replaces variables with their values, returns string joined by joins string passed as argument
+// replaces variables with their values, returns string joined by join string passed as argument
 export function renderMacroTemplate(template: any, join: any, variables: any) {
   // we only want macros that have a value
   let macroVariables = extractMacroVariables(template, variables);
@@ -134,24 +128,42 @@ export function renderMacroTemplate(template: any, join: any, variables: any) {
   return result.join(join);
 }
 
-export function buildSqlTemplate(sql: string, macro: string, replacer: string, variables: any, addParentheses = true) {
-  let macros = extractMacrosFunction(sql, macro);
-  if (macros.length) {
-    sql = macros.reduce((query: string, mc: { template: any; start: any; end: number }) => {
-      let template = renderMacroTemplate(mc.template, replacer, variables);
+// replace macros, join variables with passed sql syntax
+export function buildSqlTemplate(
+  sql: string,
+  macro: string | null,
+  replacer: string,
+  variables: any,
+  addParentheses = true
+) {
+  if (macro === null) {
+    sql = sql.replace(variableRegex, (match, _) => {
+      let template = renderMacroTemplate(match, replacer, variables);
       if (addParentheses === true) {
         template = `(${template})`;
       }
-      // replace macro and variable inside with coresponding sql keywords
-      return query.substring(0, mc.start) + template + query.substring(mc.end + 1);
-    }, sql);
+      return template;
+    });
+  } else {
+    // macros require additionaly removig macro variables from query
+    let macros = extractMacrosFunction(sql, macro);
+    if (macros.length) {
+      sql = macros.reduce((query: string, mc: { template: any; start: any; end: number }) => {
+        let template = renderMacroTemplate(mc.template, replacer, variables);
+        if (addParentheses === true) {
+          template = `(${template})`;
+        }
+        // replace macro and variable inside with coresponding sql keywords
+        return query.substring(0, mc.start) + template + query.substring(mc.end + 1);
+      }, sql);
+    }
   }
   return sql;
 }
 
 // formats variables with coma, and, or depending on variable
 // e.g:
-// var1 = column = val1, column = val2
+// var1 : { column = val1, column = val2 }
 // $__and(${var1}) => column = val1 AND column = val2
 export function buildQueryTemplate(sql: any, variables: any) {
   // handle variables inside macros
@@ -159,7 +171,7 @@ export function buildQueryTemplate(sql: any, variables: any) {
   sql = buildSqlTemplate(sql, '$__or', ' OR ', variables, true);
   sql = buildSqlTemplate(sql, '$__and', ' AND ', variables, true);
   // handle variables not included in any macros
-  sql = replaceVariablesWithValuesOutsideMacros(sql, variables);
+  sql = buildSqlTemplate(sql, null, ' OR ', variables, true);
   return sql;
 }
 
@@ -193,6 +205,7 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
     this.templateSrv = getTemplateSrv();
   }
 
+  // send query to backend
   query(request: DataQueryRequest<QdbQuery>): Observable<DataQueryResponse> {
     if (request.targets[0].tagQuery === true) {
       return super.query(request);
