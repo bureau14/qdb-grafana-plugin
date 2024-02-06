@@ -39,43 +39,56 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) ([]interface{}, erro
 }
 
 func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
-	// this function checks if query includes group by statement,
+	// this function checks if query includes group by statement:
 	// extracts group by arguments, selects first argument that is not $__interval
 	// finds column with its name
-	// returns true if query includes group by, index of found column
+	// returns true if query includes group by, index of found column, name of found column
 
-	isGroupByRegex := regexp.MustCompile(`\bGROUP\s+BY\s+(.*?)(\s*(?:ORDER\s+BY|$))`)
-	if isGroupByRegex.MatchString(query) {
-		// extract args from group by
-		groupByArgs := strings.Split(isGroupByRegex.FindStringSubmatch(query)[1], ",")
-		idx := 0
-		for i, arg := range groupByArgs {
-			groupByArgs[i] = strings.TrimSpace(arg)
-			// $__interval is a duaration of time as a string
-			// if current arg is parasable its $__interval, skip it
-			_, err := time.ParseDuration(groupByArgs[i])
-			if err != nil {
-				idx = i
-				break
-			}
-		}
-		log.DefaultLogger.Debug("comapring columns")
-		for colId, colName := range fields {
-			colName.Name = strings.TrimSpace(colName.Name)
-			log.DefaultLogger.Debug(fmt.Sprintf("%d", colId))
-			log.DefaultLogger.Debug(fmt.Sprintf("'%s'", colName.Name))
-			log.DefaultLogger.Debug(fmt.Sprintf("'%s'", groupByArgs[idx]))
-			if colName.Name == groupByArgs[idx] {
-				return true, colId, groupByArgs[idx]
-			}
-		}
-		log.DefaultLogger.Warn(fmt.Sprintf("Cant find %s column, defaulting to standard formating", groupByArgs[idx]))
+	isGroupByRegex := regexp.MustCompile(`(?i)\bSELECT\s+(.*?)\s*(?:FROM).*GROUP\s+BY\s+(.*?)(\s*(?:ORDER\s+BY|$))`)
+	if !isGroupByRegex.MatchString(query) {
+		log.DefaultLogger.Warn(fmt.Sprintf(query, "is not a group by query, will be treated as standard query"))
+		return false, 0, ""
 	}
+	// extract args from group by, select clauses
+	selectArgs := strings.Split(isGroupByRegex.FindStringSubmatch(query)[1], ",")
+	groupByArgs := strings.Split(isGroupByRegex.FindStringSubmatch(query)[2], ",")
+
+	// skip queries where there is only one, same argument in select and group by clauses
+	// like `select param from table group by param`
+	if len(selectArgs) == len(groupByArgs) && len(groupByArgs) == 1 && strings.TrimSpace(groupByArgs[0]) == strings.TrimSpace(selectArgs[0]) {
+		log.DefaultLogger.Warn(fmt.Sprintf(query, "will be treated as standard query"))
+		return false, 0, ""
+	}
+
+	idx := 0
+	for i, arg := range groupByArgs {
+		groupByArgs[i] = strings.TrimSpace(arg)
+		// $__interval is a duaration of time as a string
+		// if current arg is parasable its $__interval, skip it
+		_, err := time.ParseDuration(groupByArgs[i])
+		if err != nil {
+			idx = i
+			break
+		}
+	}
+	log.DefaultLogger.Debug("comapring columns")
+	for colId, colName := range fields {
+		colName.Name = strings.TrimSpace(colName.Name)
+		log.DefaultLogger.Debug(fmt.Sprintf("%d", colId))
+		log.DefaultLogger.Debug(fmt.Sprintf("'%s'", colName.Name))
+		log.DefaultLogger.Debug(fmt.Sprintf("'%s'", groupByArgs[idx]))
+		if colName.Name == groupByArgs[idx] {
+			return true, colId, groupByArgs[idx]
+		}
+	}
+	log.DefaultLogger.Warn(fmt.Sprintf("Cant find %s column, defaulting to standard formating", groupByArgs[idx]))
 	return false, 0, ""
 }
 
 func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) (*data.Frame, error) {
 	// returns new frame where all rows match typeValue in given column
+
+	// compare values of typevalue and *t
 	filterCondition := func(i interface{}) (bool, error) {
 		switch t := i.(type) {
 		case *string:
@@ -103,6 +116,7 @@ func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) 
 	for _, typeValue := range uniqueTypes {
 		tmpFrame, _ := FilterDataFrameByType(frame, typeValue, columnIndex)
 		tmpFrame.Name = fmt.Sprintf("%s %s,", name, typeValue)
+		log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", tmpFrame.Name))
 		splitFrames = append(splitFrames, tmpFrame)
 	}
 	return splitFrames
