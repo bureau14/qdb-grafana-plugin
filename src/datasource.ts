@@ -138,11 +138,15 @@ export function buildSqlTemplate(
 ) {
   if (macro === null) {
     sql = sql.replace(variableRegex, (match, _) => {
+      // if template is empty variable is not multi-value, it will be replaced later
       let template = renderMacroTemplate(match, replacer, variables);
-      if (addParentheses === true) {
-        template = `(${template})`;
+      if (template !== '') {
+        if (addParentheses === true) {
+          template = `(${template})`;
+        }
+        return template;
       }
-      return template;
+      return match;
     });
   } else {
     // macros require additionaly removig macro variables from query
