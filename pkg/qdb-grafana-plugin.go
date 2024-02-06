@@ -424,8 +424,11 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	log.DefaultLogger.Debug(fmt.Sprintf("Row count: %d", rowCount))
 	isGroupBy, columnIndex, columnName := IsGroupByQuery(qm.QueryText, frame.Fields)
 	if !isGroupBy {
+		log.DefaultLogger.Debug("Rendering single dimension")
 		response.Frames = append(response.Frames, frame)
 	} else {
+		log.DefaultLogger.Debug("Rendering multiple dimensions, will split by group by arguments")
+		log.DefaultLogger.Debug(fmt.Sprintf("frames prefix: %s =", columnName))
 		framePrefix := fmt.Sprintf("%s =", columnName)
 		splitedFrames := SplitByUniqueColumnValues(frame, columnIndex, framePrefix)
 		response.Frames = append(response.Frames, splitedFrames...)
