@@ -76,8 +76,8 @@ export function extractMacroVariables(template: any, dashVars: any) {
     }
     const dashVar = dashVars.find((dv: { name: any }) => dv.name === variableName);
 
-    // we only consider multi variables
-    if (dashVar && dashVar.multi) {
+    // we only consider multi variables and variables with includeAll
+    if (dashVar && (dashVar.multi || dashVar.includeAll)) {
       // ensure the current value is always an array when multi is true
       // sometimes (rarely) it seems to come through as a string
       let value = dashVar.current.value || [];
@@ -107,7 +107,7 @@ export function extractMacroVariables(template: any, dashVars: any) {
 }
 
 // replaces variables with their values, returns string joined by join string passed as argument
-export function renderMacroTemplate(template: any, join: any, variables: any) {
+export function renderMacroTemplate(template: any, join: any, variables: any, addParentheses: boolean) {
   // we only want macros that have a value
   let macroVariables = extractMacroVariables(template, variables);
   macroVariables = macroVariables.filter((m) => !!m.value);
@@ -125,7 +125,11 @@ export function renderMacroTemplate(template: any, join: any, variables: any) {
     }
     result.push(resultTemplate);
   }
-  return result.join(join);
+  let resultString = result.join(join);
+  if (result.length > 1 && addParentheses) {
+    return `(${resultString})`;
+  }
+  return resultString;
 }
 
 // replace macros, join variables with passed sql syntax
@@ -139,11 +143,8 @@ export function buildSqlTemplate(
   if (macro === null) {
     sql = sql.replace(variableRegex, (match, _) => {
       // if template is empty variable is not multi-value, it will be replaced later
-      let template = renderMacroTemplate(match, replacer, variables);
+      let template = renderMacroTemplate(match, replacer, variables, addParentheses);
       if (template !== '') {
-        if (addParentheses === true) {
-          template = `(${template})`;
-        }
         return template;
       }
       return match;
@@ -153,10 +154,7 @@ export function buildSqlTemplate(
     let macros = extractMacrosFunction(sql, macro);
     if (macros.length) {
       sql = macros.reduce((query: string, mc: { template: any; start: any; end: number }) => {
-        let template = renderMacroTemplate(mc.template, replacer, variables);
-        if (addParentheses === true) {
-          template = `(${template})`;
-        }
+        let template = renderMacroTemplate(mc.template, replacer, variables, addParentheses);
         // replace macro and variable inside with coresponding sql keywords
         return query.substring(0, mc.start) + template + query.substring(mc.end + 1);
       }, sql);
