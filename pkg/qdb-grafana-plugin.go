@@ -392,7 +392,24 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 			return &response, nil
 		}
 		// consider that an empty result is not an error
-		// send back empty response
+		// send back empty response, log info
+		log.DefaultLogger.Info("Response is empty")
+		return &response, nil
+	}
+
+	// this handles tag queries
+	tagQueryPattern := regexp.MustCompile(`^find\(tag=.*\)$`)	// e.g: find(tag='some-tag')
+	if tagQueryPattern.MatchString(qm.QueryText) {
+		frame := data.NewFrame(qm.QueryText)
+		var tableNames []string
+		for _, table := range queryRes.Tables {
+			tableNames = append(tableNames, table.Name)
+		}
+		// append table names to new field named after QueryText
+		frame.Fields = append(frame.Fields,
+			data.NewField(qm.QueryText, nil, tableNames),
+		)
+		response.Frames = append(response.Frames, frame)
 		return &response, nil
 	}
 

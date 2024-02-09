@@ -11,15 +11,13 @@ exports[`QueryEditor 1`] = `
     value="SELECT * FROM ts;"
   />
   <button
-    className="css-u6ysb0-button"
+    className="css-a5ta8x-button"
     onClick={[MockFunction]}
   >
     <span
-      className="css-1beih13"
+      className="css-1mhnkuh"
     >
-      <span>
-        Run Query
-      </span>
+      Run Query
     </span>
   </button>
 </div>
