@@ -287,17 +287,24 @@ export class DataSource extends DataSourceWithBackend<QdbQuery, QdbDataSourceOpt
           // queries are returned as column_name = value
           // tag queries are formated as value only
           // queries returning $table column are returned as value only
-          if (fields.type === 'string') {
-            if (query.tagQuery === true) {
-              values.push({ text: fields.values.get(i), value: fields.values.get(i) });
-            } else if (fields.name === '$table' || queryText.match(/^find\(tag=.*\)$/)) {
-              values.push({ text: fields.values.get(i), value: formatTableName(fields.values.get(i)) });
-            } else {
-              values.push({ text: fields.values.get(i), value: `${fields.name}=` + "'" + fields.values.get(i) + "'" });
-            }
+          // if (fields.type === 'string') {\
+          let value = fields.values.get(i);
+          let text = fields.values.get(i);
+          if (query.tagQuery === true) {
+            value = fields.values.get(i);
+          } else if (fields.name === '$table' || queryText.match(/^find\(tag=.*\)$/i)) {
+            value = formatTableName(fields.values.get(i));
           } else {
-            values.push({ text: fields.values.get(i), value: `${fields.name}=` + fields.values.get(i) });
+            if (fields.type === 'string' && fields.values.get(i) !== null) {
+              value = `${fields.name}=` + "'" + fields.values.get(i) + "'";
+            } else if (fields.values.get(i) !== null) {
+              value = `${fields.name}=` + fields.values.get(i);
+            } else {
+              value = `${fields.name} IS NULL`;
+              text = 'NULL';
+            }
           }
+          values.push({ text: text, value: value });
         }
       }
       console.log('returning variables: ', values);
