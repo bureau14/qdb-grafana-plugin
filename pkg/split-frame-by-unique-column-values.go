@@ -11,7 +11,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
-func GetUniqueColumnValues(frame *data.Frame, columnId int) ([]interface{}, error) {
+func GetUniqueColumnValues(frame *data.Frame, columnId int) []interface{} {
 	// Create a map to store unique values
 	uniqueValues := make(map[interface{}]int)
 	// Iterate through the rows and collect unique values from the specified column
@@ -51,7 +51,7 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) ([]interface{}, erro
 	for value := range uniqueValues {
 		result = append(result, value)
 	}
-	return result, nil
+	return result
 }
 
 func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
@@ -134,7 +134,7 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 
 func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) (splitFrames []*data.Frame) {
 	// return array of data.Frame grouped by unique values
-	uniqueTypes, _ := GetUniqueColumnValues(frame, columnIndex)
+	uniqueTypes := GetUniqueColumnValues(frame, columnIndex)
 	// custom display configuration, hides field from visualization, legend
 	hideFromVisualization := map[string]interface{}{
 		"hideFrom": map[string]interface{}{

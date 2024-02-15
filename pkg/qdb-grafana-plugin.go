@@ -92,7 +92,7 @@ type ResetTokenError struct {
 }
 
 func (e *ResetTokenError) Error() string {
-	return fmt.Sprintf("Issuing token reset.")
+	return "Issuing token reset."
 }
 
 func makeClient() *http.Client {
@@ -107,10 +107,10 @@ func makeClient() *http.Client {
 
 func getToken(settings *instanceSettings) (string, error) {
 	if settings.token == "" {
-		log.DefaultLogger.Debug(fmt.Sprintf("Retrieving token"))
+		log.DefaultLogger.Debug("Retrieving token")
 		host := settings.host
 		if host == "" {
-			errMsg := "Host cannot be empty"
+			errMsg := "host cannot be empty"
 			log.DefaultLogger.Error(errMsg)
 			return "", fmt.Errorf(errMsg)
 		}
@@ -123,7 +123,7 @@ func getToken(settings *instanceSettings) (string, error) {
 		}
 
 		path := fmt.Sprintf("%s/api/login", host)
-		loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
+		loginReq, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
 		loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 		if credential.Username == "" {
@@ -184,7 +184,7 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 			case *ResetTokenError:
 				log.DefaultLogger.Warn("Token reset.")
 				settings.token = ""
-				token, err = getToken(settings)
+				token, _ = getToken(settings)
 				res, err = td.query(ctx, q, host, token)
 				if err != nil {
 					log.DefaultLogger.Error(err.Error())
@@ -321,6 +321,9 @@ func makeRequest(host string, query queryModel) (*http.Request, error) {
 			Query: query.QueryText,
 		}
 		queryRequest, err := json.Marshal(q)
+		if err != nil {
+			return nil, err
+		}
 
 		path := fmt.Sprintf("%s/api/query", host)
 		log.DefaultLogger.Debug(fmt.Sprintf("Request path: %s", path))
@@ -346,11 +349,14 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 	if qm.QueryText == "" {
-		response.Error = fmt.Errorf("Error: query cannot be empty. Aborting...")
+		response.Error = fmt.Errorf("error: query cannot be empty. Aborting...")
 		return &response, nil
 	}
 
 	req, err := makeRequest(host, qm)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	log.DefaultLogger.Debug(fmt.Sprintf("query: %s", qm.QueryText))
@@ -391,7 +397,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 					return &response, nil
 				}
 			}
-			response.Error = fmt.Errorf("Error: '%s'", qm.QueryText, e.Message)
+			response.Error = fmt.Errorf("query: '%s', Error: '%s'", qm.QueryText, e.Message)
 			return &response, nil
 		}
 		// consider that an empty result is not an error
@@ -417,7 +423,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
 	if len(queryRes.Tables) > 1 {
-		response.Error = fmt.Errorf("Error: Multiple tables result are not supported at this time.")
+		response.Error = fmt.Errorf("error: Multiple tables result are not supported at this time")
 		return &response, nil
 	}
 
@@ -499,8 +505,8 @@ func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instance
 	}
 
 	var secureData = setting.DecryptedSecureJSONData
-	user, _ := secureData["user"]
-	userPrivateKey, _ := secureData["secret"]
+	user := secureData["user"]
+	userPrivateKey := secureData["secret"]
 
 	credential := QdbCredential{
 		Username:  user,
