@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -18,14 +19,29 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) ([]interface{}, erro
 	rows := frame.Rows()
 	for i := 0; i < rows; i++ {
 		value := frame.At(columnId, i)
+		log.DefaultLogger.Debug(fmt.Sprintf("type: %s", value))
 		switch typeValue := value.(type) {
 		case *string:
-			uniqueValues[*typeValue] = 0
+			if typeValue != nil {
+				uniqueValues[*typeValue] = 0
+			} else {
+				uniqueValues[nil] = 0
+			}
 		case *int64:
-			uniqueValues[*typeValue] = 0
+			log.DefaultLogger.Debug(fmt.Sprintf("value: %d", typeValue))
+			if typeValue != nil {
+				uniqueValues[*typeValue] = 0
+			} else {
+				uniqueValues[nil] = 0
+			}
 		case *float64:
-			uniqueValues[*typeValue] = 0
+			if typeValue != nil {
+				uniqueValues[*typeValue] = 0
+			} else {
+				uniqueValues[nil] = 0
+			}
 		default:
+			log.DefaultLogger.Debug(fmt.Sprintf("got unhandled type: %s", typeValue))
 			uniqueValues[nil] = 0
 		}
 	}
@@ -39,8 +55,8 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) ([]interface{}, erro
 }
 
 func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
-	// this function checks if query includes group by statement:
-	// extracts group by arguments, selects first argument that is not $__interval
+	// checks if query includes group by statement:
+	// extracts group by arguments, selects first argument that is not $__interval or $timestamp
 	// finds column with its name
 	// returns true if query includes group by, index of found column, name of found column
 
@@ -66,7 +82,7 @@ func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
 		// $__interval is a duaration of time as a string
 		// if current arg is parasable its $__interval, skip it
 		_, err := time.ParseDuration(groupByArgs[i])
-		if err != nil {
+		if err != nil && groupByArgs[i] != "$timestamp" {
 			idx = i
 			break
 		}
@@ -74,10 +90,8 @@ func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
 	log.DefaultLogger.Debug("comapring columns")
 	for colId, colName := range fields {
 		colName.Name = strings.TrimSpace(colName.Name)
-		log.DefaultLogger.Debug(fmt.Sprintf("%d", colId))
-		log.DefaultLogger.Debug(fmt.Sprintf("'%s'", colName.Name))
-		log.DefaultLogger.Debug(fmt.Sprintf("'%s'", groupByArgs[idx]))
 		if colName.Name == groupByArgs[idx] {
+			log.DefaultLogger.Debug(fmt.Sprintf("'%s'", groupByArgs[idx]))
 			return true, colId, groupByArgs[idx]
 		}
 	}
@@ -90,6 +104,13 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 
 	// compare values of typevalue and *t
 	filterCondition := func(i interface{}) (bool, error) {
+		if reflect.ValueOf(i).IsNil() {
+			if typeValue == nil {
+				return true, nil
+			}
+			return false, nil
+		}
+		// log.DefaultLogger.Warn(fmt.Sprint("interface to filter: ", i))
 		switch t := i.(type) {
 		case *string:
 			return *t == typeValue, nil
@@ -98,6 +119,7 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 		case *float64:
 			return *t == typeValue, nil
 		default:
+			log.DefaultLogger.Debug(fmt.Sprintf("unhandled comapre %s", t))
 			return false, nil
 		}
 
@@ -113,10 +135,18 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) (splitFrames []*data.Frame) {
 	// return array of data.Frame grouped by unique values
 	uniqueTypes, _ := GetUniqueColumnValues(frame, columnIndex)
+	// custom display configuration, hides field from visualization, legend
+	hideFromVisualization := map[string]interface{}{
+		"hideFrom": map[string]interface{}{
+			"viz":    true,
+			"legend": true,
+		},
+	}
 	for _, typeValue := range uniqueTypes {
 		tmpFrame, _ := FilterDataFrameByType(frame, typeValue, columnIndex)
-		tmpFrame.Name = fmt.Sprintf("%s %s,", name, typeValue)
-		log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", tmpFrame.Name))
+		tmpFrame.Name = fmt.Sprintf("%s %s,", name, fmt.Sprint(typeValue))
+		// hide column that is used to group by from visualization, legend
+		tmpFrame.Fields[columnIndex].Config = &data.FieldConfig{Custom: hideFromVisualization}
 		splitFrames = append(splitFrames, tmpFrame)
 	}
 	return splitFrames
