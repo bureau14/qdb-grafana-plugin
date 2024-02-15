@@ -1,16 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"time"
-    "bytes"
-    "io/ioutil"
+	"io/ioutil"
 	"net/http"
-	"strconv"
 	"regexp"
-    "crypto/tls"
+	"strconv"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -54,7 +54,7 @@ type QdbError struct {
 
 type QdbCredential struct {
 	SecretKey string `json:"secret_key,omitempty"`
-	Username string `json:"username,omitempty"`
+	Username  string `json:"username,omitempty"`
 }
 
 type QdbQuery struct {
@@ -67,30 +67,29 @@ type QueryResult struct {
 
 type QueryColumn struct {
 	Data []interface{} `json:"data"`
-	Name string `json:"name,omitempty"`
-	Type string `json:"type,omitempty"`
+	Name string        `json:"name,omitempty"`
+	Type string        `json:"type,omitempty"`
 }
 
 type QueryTable struct {
 	Columns []*QueryColumn `json:"columns"`
-	Name string `json:"name,omitempty"`
+	Name    string         `json:"name,omitempty"`
 }
 
 type instanceSettings struct {
-	host string
-	token string
+	host       string
+	token      string
 	credential QdbCredential
 }
 
 type queryModel struct {
-	Format string `json:"format"`
+	Format    string `json:"format"`
 	QueryText string `json:"queryText"`
-	TagQuery bool `json:"tagQuery"`
+	TagQuery  bool   `json:"tagQuery"`
 }
 
 type ResetTokenError struct {
 }
-
 
 func (e *ResetTokenError) Error() string {
 	return fmt.Sprintf("Issuing token reset.")
@@ -117,11 +116,11 @@ func getToken(settings *instanceSettings) (string, error) {
 		}
 		credential := settings.credential
 
-    	loginRequest, err := json.Marshal(credential)
-    	if err != nil {
+		loginRequest, err := json.Marshal(credential)
+		if err != nil {
 			log.DefaultLogger.Error(err.Error())
 			return "", err
-    	}
+		}
 
 		path := fmt.Sprintf("%s/api/login", host)
 		loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
@@ -134,16 +133,16 @@ func getToken(settings *instanceSettings) (string, error) {
 		}
 
 		client := makeClient()
-    	loginResponse, err := client.Do(loginReq)
-    	if err != nil {
+		loginResponse, err := client.Do(loginReq)
+		if err != nil {
 			log.DefaultLogger.Error(err.Error())
 			return "", err
-    	}
-    	defer loginResponse.Body.Close()
-    	bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+		}
+		defer loginResponse.Body.Close()
+		bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
 
-    	var t QdbToken
-    	json.Unmarshal(bodyBytes, &t)
+		var t QdbToken
+		json.Unmarshal(bodyBytes, &t)
 		settings.token = t.Token
 		if settings.token == "" {
 			var e QdbError
@@ -194,9 +193,13 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 			default:
 				log.DefaultLogger.Error(err.Error())
 				return nil, err
-		   }
+			}
 		}
 
+		log.DefaultLogger.Debug("-------------------------")
+		for _, f := range res.Frames {
+			log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", f.Name))
+		}
 		// save the response in a hashmap
 		// based on with RefID as identifier
 		response.Responses[q.RefID] = *res
@@ -290,16 +293,16 @@ func convertBlobLikeColumn(data []interface{}) ([]*string, error) {
 
 func convertValues(column *QueryColumn, rowCount int) (interface{}, error) {
 	switch t := column.Type; t {
-		case "timestamp":
-			return convertTimestampColumn(column.Data)
-		case "int64", "count":
-			return convertInt64Column(column.Data)
-		case "double":
-			return convertDoubleColumn(column.Data)
-		case "blob", "string", "symbol":
-			return convertBlobLikeColumn(column.Data)
-		default:
-			return make([]*string, rowCount), nil
+	case "timestamp":
+		return convertTimestampColumn(column.Data)
+	case "int64", "count":
+		return convertInt64Column(column.Data)
+	case "double":
+		return convertDoubleColumn(column.Data)
+	case "blob", "string", "symbol":
+		return convertBlobLikeColumn(column.Data)
+	default:
+		return make([]*string, rowCount), nil
 	}
 }
 
@@ -353,22 +356,22 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	log.DefaultLogger.Debug(fmt.Sprintf("query: %s", qm.QueryText))
 
 	client := makeClient()
-    queryResponse, err := client.Do(req)
-    if err != nil {
+	queryResponse, err := client.Do(req)
+	if err != nil {
 		log.DefaultLogger.Error(fmt.Sprintf("Response: %v", queryResponse))
 		response.Error = err
 		return &response, nil
-    }
-    defer queryResponse.Body.Close()
-    bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
+	}
+	defer queryResponse.Body.Close()
+	bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
 
 	if queryResponse.StatusCode == 401 {
 		return nil, &ResetTokenError{}
 	}
 
-    var queryRes QueryResult
-    json.Unmarshal(bodyBytes, &queryRes)
-	
+	var queryRes QueryResult
+	json.Unmarshal(bodyBytes, &queryRes)
+
 	log.DefaultLogger.Debug(fmt.Sprintf("Table count: %d", len(queryRes.Tables)))
 
 	if len(queryRes.Tables) == 0 {
@@ -398,7 +401,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
 	// this handles tag queries
-	tagQueryPattern := regexp.MustCompile(`^find\(tag=.*\)$`)	// e.g: find(tag='some-tag')
+	tagQueryPattern := regexp.MustCompile(`^find\(tag=.*\)$`) // e.g: find(tag='some-tag')
 	if tagQueryPattern.MatchString(qm.QueryText) {
 		frame := data.NewFrame(qm.QueryText)
 		var tableNames []string
@@ -449,6 +452,10 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		framePrefix := fmt.Sprintf("%s =", columnName)
 		splitedFrames := SplitByUniqueColumnValues(frame, columnIndex, framePrefix)
 		response.Frames = append(response.Frames, splitedFrames...)
+
+		for _, f := range response.Frames {
+			log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s =", f.Name))
+		}
 	}
 	return &response, nil
 }
@@ -480,28 +487,28 @@ func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-    type editModel struct {
-        Host string `json:"host"`
-    }
+	type editModel struct {
+		Host string `json:"host"`
+	}
 
-    var hosts editModel
-    err := json.Unmarshal(setting.JSONData, &hosts)
-    if err != nil {
-        log.DefaultLogger.Warn("error marshalling", "err", err)
-        return nil, err
-    }
+	var hosts editModel
+	err := json.Unmarshal(setting.JSONData, &hosts)
+	if err != nil {
+		log.DefaultLogger.Warn("error marshalling", "err", err)
+		return nil, err
+	}
 
 	var secureData = setting.DecryptedSecureJSONData
-    user, _ := secureData["user"]
-    userPrivateKey, _ := secureData["secret"]
+	user, _ := secureData["user"]
+	userPrivateKey, _ := secureData["secret"]
 
 	credential := QdbCredential{
-		Username: user,
+		Username:  user,
 		SecretKey: userPrivateKey,
 	}
 
 	return &instanceSettings{
-		host: hosts.Host,
+		host:       hosts.Host,
 		credential: credential,
 	}, nil
 }
