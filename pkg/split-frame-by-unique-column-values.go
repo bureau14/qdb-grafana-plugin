@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -19,19 +20,16 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) []interface{} {
 	rows := frame.Rows()
 	for i := 0; i < rows; i++ {
 		value := frame.At(columnId, i)
+		if reflect.ValueOf(value).IsNil() {
+			continue
+		}
 		switch typeValue := value.(type) {
 		case *string:
-			if typeValue != nil {
-				uniqueValues[*typeValue] = 0
-			}
+			uniqueValues[*typeValue] = 0
 		case *int64:
-			if typeValue != nil {
-				uniqueValues[*typeValue] = 0
-			}
+			uniqueValues[*typeValue] = 0
 		case *float64:
-			if typeValue != nil {
-				uniqueValues[*typeValue] = 0
-			}
+			uniqueValues[*typeValue] = 0
 		default:
 			log.DefaultLogger.Error(fmt.Sprintf("got unhandled type: %s", typeValue))
 		}
@@ -95,6 +93,9 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 
 	// compare values of typevalue and *t
 	filterCondition := func(i interface{}) (bool, error) {
+		if reflect.ValueOf(i).IsNil() {
+			return false, nil
+		}
 		switch t := i.(type) {
 		case *string:
 			return *t == typeValue, nil
