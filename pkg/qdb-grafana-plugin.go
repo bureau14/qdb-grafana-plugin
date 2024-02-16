@@ -1,16 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"time"
-    "bytes"
-    "io/ioutil"
+	"io"
 	"net/http"
-	"strconv"
 	"regexp"
-    "crypto/tls"
+	"strconv"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -54,7 +54,7 @@ type QdbError struct {
 
 type QdbCredential struct {
 	SecretKey string `json:"secret_key,omitempty"`
-	Username string `json:"username,omitempty"`
+	Username  string `json:"username,omitempty"`
 }
 
 type QdbQuery struct {
@@ -67,33 +67,32 @@ type QueryResult struct {
 
 type QueryColumn struct {
 	Data []interface{} `json:"data"`
-	Name string `json:"name,omitempty"`
-	Type string `json:"type,omitempty"`
+	Name string        `json:"name,omitempty"`
+	Type string        `json:"type,omitempty"`
 }
 
 type QueryTable struct {
 	Columns []*QueryColumn `json:"columns"`
-	Name string `json:"name,omitempty"`
+	Name    string         `json:"name,omitempty"`
 }
 
 type instanceSettings struct {
-	host string
-	token string
+	host       string
+	token      string
 	credential QdbCredential
 }
 
 type queryModel struct {
-	Format string `json:"format"`
+	Format    string `json:"format"`
 	QueryText string `json:"queryText"`
-	TagQuery bool `json:"tagQuery"`
+	TagQuery  bool   `json:"tagQuery"`
 }
 
 type ResetTokenError struct {
 }
 
-
 func (e *ResetTokenError) Error() string {
-	return fmt.Sprintf("Issuing token reset.")
+	return "Issuing token reset."
 }
 
 func makeClient() *http.Client {
@@ -108,23 +107,23 @@ func makeClient() *http.Client {
 
 func getToken(settings *instanceSettings) (string, error) {
 	if settings.token == "" {
-		log.DefaultLogger.Debug(fmt.Sprintf("Retrieving token"))
+		log.DefaultLogger.Debug("Retrieving token")
 		host := settings.host
 		if host == "" {
-			errMsg := "Host cannot be empty"
+			errMsg := "host cannot be empty"
 			log.DefaultLogger.Error(errMsg)
 			return "", fmt.Errorf(errMsg)
 		}
 		credential := settings.credential
 
-    	loginRequest, err := json.Marshal(credential)
-    	if err != nil {
+		loginRequest, err := json.Marshal(credential)
+		if err != nil {
 			log.DefaultLogger.Error(err.Error())
 			return "", err
-    	}
+		}
 
 		path := fmt.Sprintf("%s/api/login", host)
-		loginReq, err := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
+		loginReq, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(loginRequest))
 		loginReq.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 		if credential.Username == "" {
@@ -134,16 +133,16 @@ func getToken(settings *instanceSettings) (string, error) {
 		}
 
 		client := makeClient()
-    	loginResponse, err := client.Do(loginReq)
-    	if err != nil {
+		loginResponse, err := client.Do(loginReq)
+		if err != nil {
 			log.DefaultLogger.Error(err.Error())
 			return "", err
-    	}
-    	defer loginResponse.Body.Close()
-    	bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+		}
+		defer loginResponse.Body.Close()
+		bodyBytes, _ := io.ReadAll(loginResponse.Body)
 
-    	var t QdbToken
-    	json.Unmarshal(bodyBytes, &t)
+		var t QdbToken
+		json.Unmarshal(bodyBytes, &t)
 		settings.token = t.Token
 		if settings.token == "" {
 			var e QdbError
@@ -185,7 +184,7 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 			case *ResetTokenError:
 				log.DefaultLogger.Warn("Token reset.")
 				settings.token = ""
-				token, err = getToken(settings)
+				token, _ = getToken(settings)
 				res, err = td.query(ctx, q, host, token)
 				if err != nil {
 					log.DefaultLogger.Error(err.Error())
@@ -194,7 +193,7 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 			default:
 				log.DefaultLogger.Error(err.Error())
 				return nil, err
-		   }
+			}
 		}
 
 		// save the response in a hashmap
@@ -290,16 +289,16 @@ func convertBlobLikeColumn(data []interface{}) ([]*string, error) {
 
 func convertValues(column *QueryColumn, rowCount int) (interface{}, error) {
 	switch t := column.Type; t {
-		case "timestamp":
-			return convertTimestampColumn(column.Data)
-		case "int64", "count":
-			return convertInt64Column(column.Data)
-		case "double":
-			return convertDoubleColumn(column.Data)
-		case "blob", "string", "symbol":
-			return convertBlobLikeColumn(column.Data)
-		default:
-			return make([]*string, rowCount), nil
+	case "timestamp":
+		return convertTimestampColumn(column.Data)
+	case "int64", "count":
+		return convertInt64Column(column.Data)
+	case "double":
+		return convertDoubleColumn(column.Data)
+	case "blob", "string", "symbol":
+		return convertBlobLikeColumn(column.Data)
+	default:
+		return make([]*string, rowCount), nil
 	}
 }
 
@@ -318,6 +317,9 @@ func makeRequest(host string, query queryModel) (*http.Request, error) {
 			Query: query.QueryText,
 		}
 		queryRequest, err := json.Marshal(q)
+		if err != nil {
+			return nil, err
+		}
 
 		path := fmt.Sprintf("%s/api/query", host)
 		log.DefaultLogger.Debug(fmt.Sprintf("Request path: %s", path))
@@ -343,32 +345,35 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 	if qm.QueryText == "" {
-		response.Error = fmt.Errorf("Error: query cannot be empty. Aborting...")
+		response.Error = fmt.Errorf("error: query cannot be empty. Aborting...")
 		return &response, nil
 	}
 
 	req, err := makeRequest(host, qm)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
 	log.DefaultLogger.Debug(fmt.Sprintf("query: %s", qm.QueryText))
 
 	client := makeClient()
-    queryResponse, err := client.Do(req)
-    if err != nil {
+	queryResponse, err := client.Do(req)
+	if err != nil {
 		log.DefaultLogger.Error(fmt.Sprintf("Response: %v", queryResponse))
 		response.Error = err
 		return &response, nil
-    }
-    defer queryResponse.Body.Close()
-    bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
+	}
+	defer queryResponse.Body.Close()
+	bodyBytes, _ := io.ReadAll(queryResponse.Body)
 
 	if queryResponse.StatusCode == 401 {
 		return nil, &ResetTokenError{}
 	}
 
-    var queryRes QueryResult
-    json.Unmarshal(bodyBytes, &queryRes)
-	
+	var queryRes QueryResult
+	json.Unmarshal(bodyBytes, &queryRes)
+
 	log.DefaultLogger.Debug(fmt.Sprintf("Table count: %d", len(queryRes.Tables)))
 
 	if len(queryRes.Tables) == 0 {
@@ -388,7 +393,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 					return &response, nil
 				}
 			}
-			response.Error = fmt.Errorf("Error: '%s'", qm.QueryText, e.Message)
+			response.Error = fmt.Errorf("query: '%s', Error: '%s'", qm.QueryText, e.Message)
 			return &response, nil
 		}
 		// consider that an empty result is not an error
@@ -398,7 +403,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
 	// this handles tag queries
-	tagQueryPattern := regexp.MustCompile(`^find\(tag=.*\)$`)	// e.g: find(tag='some-tag')
+	tagQueryPattern := regexp.MustCompile(`^find\(tag=.*\)$`) // e.g: find(tag='some-tag')
 	if tagQueryPattern.MatchString(qm.QueryText) {
 		frame := data.NewFrame(qm.QueryText)
 		var tableNames []string
@@ -414,7 +419,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 	}
 
 	if len(queryRes.Tables) > 1 {
-		response.Error = fmt.Errorf("Error: Multiple tables result are not supported at this time.")
+		response.Error = fmt.Errorf("error: Multiple tables result are not supported at this time")
 		return &response, nil
 	}
 
@@ -439,10 +444,17 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		)
 	}
 	log.DefaultLogger.Debug(fmt.Sprintf("Row count: %d", rowCount))
-
-	// add the frames to the response
-	response.Frames = append(response.Frames, frame)
-
+	isGroupBy, columnIndex, columnName := IsGroupByQuery(qm.QueryText, frame.Fields)
+	if !isGroupBy {
+		log.DefaultLogger.Debug("Rendering single dimension")
+		response.Frames = append(response.Frames, frame)
+	} else {
+		log.DefaultLogger.Debug("Rendering multiple dimensions, will split by group by arguments")
+		log.DefaultLogger.Debug(fmt.Sprintf("frames prefix: %s =", columnName))
+		framePrefix := fmt.Sprintf("%s =", columnName)
+		splitedFrames := SplitByUniqueColumnValues(frame, columnIndex, framePrefix)
+		response.Frames = append(response.Frames, splitedFrames...)
+	}
 	return &response, nil
 }
 
@@ -473,28 +485,28 @@ func (td *SampleDatasource) CheckHealth(ctx context.Context, req *backend.CheckH
 }
 
 func newDataSourceInstance(setting backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
-    type editModel struct {
-        Host string `json:"host"`
-    }
+	type editModel struct {
+		Host string `json:"host"`
+	}
 
-    var hosts editModel
-    err := json.Unmarshal(setting.JSONData, &hosts)
-    if err != nil {
-        log.DefaultLogger.Warn("error marshalling", "err", err)
-        return nil, err
-    }
+	var hosts editModel
+	err := json.Unmarshal(setting.JSONData, &hosts)
+	if err != nil {
+		log.DefaultLogger.Warn("error marshalling", "err", err)
+		return nil, err
+	}
 
 	var secureData = setting.DecryptedSecureJSONData
-    user, _ := secureData["user"]
-    userPrivateKey, _ := secureData["secret"]
+	user := secureData["user"]
+	userPrivateKey := secureData["secret"]
 
 	credential := QdbCredential{
-		Username: user,
+		Username:  user,
 		SecretKey: userPrivateKey,
 	}
 
 	return &instanceSettings{
-		host: hosts.Host,
+		host:       hosts.Host,
 		credential: credential,
 	}, nil
 }
