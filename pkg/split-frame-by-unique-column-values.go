@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
 	"time"
@@ -16,33 +15,25 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) []interface{} {
 	uniqueValues := make(map[interface{}]int)
 	// Iterate through the rows and collect unique values from the specified column
 	// values are converted from pointers to their types for later comparasion
+	// if pointer is null, skip appending it to hash map it
 	rows := frame.Rows()
 	for i := 0; i < rows; i++ {
 		value := frame.At(columnId, i)
-		log.DefaultLogger.Debug(fmt.Sprintf("type: %s", value))
 		switch typeValue := value.(type) {
 		case *string:
 			if typeValue != nil {
 				uniqueValues[*typeValue] = 0
-			} else {
-				uniqueValues[nil] = 0
 			}
 		case *int64:
-			log.DefaultLogger.Debug(fmt.Sprintf("value: %d", typeValue))
 			if typeValue != nil {
 				uniqueValues[*typeValue] = 0
-			} else {
-				uniqueValues[nil] = 0
 			}
 		case *float64:
 			if typeValue != nil {
 				uniqueValues[*typeValue] = 0
-			} else {
-				uniqueValues[nil] = 0
 			}
 		default:
-			log.DefaultLogger.Debug(fmt.Sprintf("got unhandled type: %s", typeValue))
-			uniqueValues[nil] = 0
+			log.DefaultLogger.Error(fmt.Sprintf("got unhandled type: %s", typeValue))
 		}
 	}
 
@@ -104,13 +95,6 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 
 	// compare values of typevalue and *t
 	filterCondition := func(i interface{}) (bool, error) {
-		if reflect.ValueOf(i).IsNil() {
-			if typeValue == nil {
-				return true, nil
-			}
-			return false, nil
-		}
-		// log.DefaultLogger.Warn(fmt.Sprint("interface to filter: ", i))
 		switch t := i.(type) {
 		case *string:
 			return *t == typeValue, nil
@@ -119,7 +103,7 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 		case *float64:
 			return *t == typeValue, nil
 		default:
-			log.DefaultLogger.Debug(fmt.Sprintf("unhandled comapre %s", t))
+			log.DefaultLogger.Error(fmt.Sprintf("unhandled comapre %s", t))
 			return false, nil
 		}
 
@@ -137,15 +121,17 @@ func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) 
 	uniqueTypes := GetUniqueColumnValues(frame, columnIndex)
 	// custom display configuration, hides field from visualization, legend
 	hideFromVisualization := map[string]interface{}{
-		"hideFrom": map[string]interface{}{
-			"viz":    true,
-			"legend": true,
+		"hideFrom": map[string]bool{
+			"viz":     true, // hide from plot
+			"legend":  true,
+			"tooltip": true,
 		},
 	}
 	for _, typeValue := range uniqueTypes {
 		tmpFrame, _ := FilterDataFrameByType(frame, typeValue, columnIndex)
-		tmpFrame.Name = fmt.Sprintf("%s %s,", name, fmt.Sprint(typeValue))
+		tmpFrame.Name = fmt.Sprintf("%s %s ", name, fmt.Sprint(typeValue))
 		// hide column that is used to group by from visualization, legend
+		log.DefaultLogger.Debug("frame name: ", tmpFrame.Name)
 		tmpFrame.Fields[columnIndex].Config = &data.FieldConfig{Custom: hideFromVisualization}
 		splitFrames = append(splitFrames, tmpFrame)
 	}

@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -139,7 +139,7 @@ func getToken(settings *instanceSettings) (string, error) {
 			return "", err
 		}
 		defer loginResponse.Body.Close()
-		bodyBytes, _ := ioutil.ReadAll(loginResponse.Body)
+		bodyBytes, _ := io.ReadAll(loginResponse.Body)
 
 		var t QdbToken
 		json.Unmarshal(bodyBytes, &t)
@@ -196,10 +196,6 @@ func (td *SampleDatasource) QueryData(ctx context.Context, req *backend.QueryDat
 			}
 		}
 
-		log.DefaultLogger.Debug("-------------------------")
-		for _, f := range res.Frames {
-			log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", f.Name))
-		}
 		// save the response in a hashmap
 		// based on with RefID as identifier
 		response.Responses[q.RefID] = *res
@@ -369,7 +365,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		return &response, nil
 	}
 	defer queryResponse.Body.Close()
-	bodyBytes, _ := ioutil.ReadAll(queryResponse.Body)
+	bodyBytes, _ := io.ReadAll(queryResponse.Body)
 
 	if queryResponse.StatusCode == 401 {
 		return nil, &ResetTokenError{}
@@ -458,10 +454,6 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		framePrefix := fmt.Sprintf("%s =", columnName)
 		splitedFrames := SplitByUniqueColumnValues(frame, columnIndex, framePrefix)
 		response.Frames = append(response.Frames, splitedFrames...)
-
-		for _, f := range response.Frames {
-			log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s =", f.Name))
-		}
 	}
 	return &response, nil
 }
