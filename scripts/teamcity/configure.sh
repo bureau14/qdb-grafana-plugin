@@ -4,7 +4,11 @@ set -eux
 
 SCRIPT_DIR="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 
-NPM=$(command -v npm)
+# Commands we expect to exist
+NODEJS=${NODEJS_CMD:-"nodejs"}
+NODE_GYP=${NODE_GYP_CMD:-"node-gyp"}
+NPM=${NPM_CMD:-"npm"}
+YARN=${YARN_CMD:-"yarn"}
 
 case "$(uname)" in
     MINGW*)
@@ -15,4 +19,7 @@ case "$(uname)" in
         ;;
 esac
 
+export NODEJS="${NODEJS}"
+export NODE_GYP="${NODE_GYP}"
 export NPM="${NPM}"
+export YARN="${YARN}"
