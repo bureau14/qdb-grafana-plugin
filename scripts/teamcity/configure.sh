@@ -23,3 +23,5 @@ export NODEJS="${NODEJS}"
 export NODE_GYP="${NODE_GYP}"
 export NPM="${NPM}"
 export YARN="${YARN}"
+
+export NODE_OPTIONS=--openssl-legacy-provider
