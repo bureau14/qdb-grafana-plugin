@@ -10,6 +10,8 @@ rm -Rf $GOPATH || true
 mkdir $GOPATH || true
 rm $GOPATH/go.mod || true
 
+${YARN} install
+
 rm -Rf $GOPATH/src/github.com/magefile
 
 cd $GOPATH
