@@ -11,7 +11,7 @@ case "$(uname)" in
         ${NPM} config set msvs_version 2017
         ;;
     *)
-        ${NPM} config set python python3
+        echo "Nothing to do"
         ;;
 esac
 
