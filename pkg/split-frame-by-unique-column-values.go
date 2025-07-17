@@ -77,23 +77,23 @@ func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
 	return false, 0, ""
 }
 
-func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) (*data.Frame, error) {
-	// returns new frame where all rows match typeValue in given column
+func FilterFrameByColumnValue(df *data.Frame, columnValue interface{}, columnId int) (*data.Frame, error) {
+	// returns new frame where all rows match columnValue in given column
 
-	// compare values of typevalue and *t
+	// function to compare values of columnValue and *t
 	filterCondition := func(i interface{}) (bool, error) {
 		if reflect.ValueOf(i).IsNil() {
 			return false, nil
 		}
 		switch t := i.(type) {
 		case *string:
-			return *t == typeValue, nil
+			return *t == columnValue, nil
 		case *int64:
-			return *t == typeValue, nil
+			return *t == columnValue, nil
 		case *float64:
-			return *t == typeValue, nil
+			return *t == columnValue, nil
 		default:
-			log.DefaultLogger.Error(fmt.Sprintf("unhandled comapre %s", t))
+			log.DefaultLogger.Error(fmt.Sprintf("Unhandled type %s in filter condition", t))
 			return false, nil
 		}
 
@@ -108,15 +108,15 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 
 func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) (splitFrames []*data.Frame) {
 	// return array of data.Frame grouped by unique values
-	uniqueTypes := GetUniqueColumnValues(frame, columnIndex)
-	for _, typeValue := range uniqueTypes {
-		tmpFrame, _ := FilterDataFrameByType(frame, typeValue, columnIndex)
-		tmpFrame.Name = fmt.Sprintf("%s%s ", name, fmt.Sprint(typeValue))
-		tmpFrame.Fields[columnIndex].Labels = map[string]string{
-			name: fmt.Sprint(typeValue),
+	uniqueColumnValues := GetUniqueColumnValues(frame, columnIndex)
+	for _, columnValue := range uniqueColumnValues {
+		filteredFrame, _ := FilterFrameByColumnValue(frame, columnValue, columnIndex)
+		filteredFrame.Name = fmt.Sprintf("%s%s ", name, fmt.Sprint(columnValue))
+		filteredFrame.Fields[columnIndex].Labels = map[string]string{
+			name: fmt.Sprint(columnValue),
 		}
-		log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", tmpFrame.Name))
-		splitFrames = append(splitFrames, tmpFrame)
+		log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", filteredFrame.Name))
+		splitFrames = append(splitFrames, filteredFrame)
 	}
 	return splitFrames
 }
