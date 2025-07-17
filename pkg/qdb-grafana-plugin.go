@@ -450,8 +450,8 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		response.Frames = append(response.Frames, frame)
 	} else {
 		log.DefaultLogger.Debug("Rendering multiple dimensions, will split by group by arguments")
-		log.DefaultLogger.Debug(fmt.Sprintf("frames prefix: %s =", columnName))
-		framePrefix := fmt.Sprintf("%s =", columnName)
+		framePrefix := fmt.Sprintf("%s=", columnName)
+		log.DefaultLogger.Debug(fmt.Sprintf("Frames will be prefixed with: %s", framePrefix))
 		splitedFrames := SplitByUniqueColumnValues(frame, columnIndex, framePrefix)
 		response.Frames = append(response.Frames, splitedFrames...)
 	}

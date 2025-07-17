@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
@@ -44,47 +43,37 @@ func GetUniqueColumnValues(frame *data.Frame, columnId int) []interface{} {
 }
 
 func IsGroupByQuery(query string, fields []*data.Field) (bool, int, string) {
-	// checks if query includes group by statement:
-	// extracts group by arguments, selects first argument that is not $__interval or $timestamp
-	// finds column with its name
 	// returns true if query includes group by, index of found column, name of found column
 
-	isGroupByRegex := regexp.MustCompile(`(?i)\bSELECT\s+(.*?)\s*(?:FROM).*GROUP\s+BY\s+(.*?)(\s*(?:ORDER\s+BY|$))`)
-	if !isGroupByRegex.MatchString(query) {
-		log.DefaultLogger.Warn(fmt.Sprintf(query, "is not a group by query, will be treated as standard query"))
-		return false, 0, ""
-	}
-	// extract args from group by, select clauses
-	selectArgs := strings.Split(isGroupByRegex.FindStringSubmatch(query)[1], ",")
-	groupByArgs := strings.Split(isGroupByRegex.FindStringSubmatch(query)[2], ",")
-
-	// skip queries where there is only one, same argument in select and group by clauses
-	// like `select param from table group by param`
-	if len(selectArgs) == len(groupByArgs) && len(groupByArgs) == 1 && strings.TrimSpace(groupByArgs[0]) == strings.TrimSpace(selectArgs[0]) {
-		log.DefaultLogger.Warn(fmt.Sprintf(query, "will be treated as standard query"))
+	// check if query includes GROUP BY
+	groupByRegex := regexp.MustCompile(`(?i)group\s+by\s+([A-Za-z0-9_]+(?:\s*,\s*[A-Za-z0-9_]+)*)`)
+	matches := groupByRegex.FindStringSubmatch(query)
+	log.DefaultLogger.Debug(fmt.Sprintf("GROUP BY regex result: %v", matches))
+	if len(matches) < 2 || matches[1] == "" {
+		log.DefaultLogger.Warn(fmt.Sprintf("No valid GROUP BY columns found in query: %s", query))
 		return false, 0, ""
 	}
 
-	idx := 0
+	// extract group by arguments from regex match
+	groupByArgsString := matches[1]
+	groupByArgs := strings.Split(groupByArgsString, ",")
 	for i, arg := range groupByArgs {
 		groupByArgs[i] = strings.TrimSpace(arg)
-		// $__interval is a duaration of time as a string
-		// if current arg is parasable its $__interval, skip it
-		_, err := time.ParseDuration(groupByArgs[i])
-		if err != nil && groupByArgs[i] != "$timestamp" {
-			idx = i
-			break
-		}
 	}
-	log.DefaultLogger.Debug("comapring columns")
-	for colId, colName := range fields {
-		colName.Name = strings.TrimSpace(colName.Name)
-		if colName.Name == groupByArgs[idx] {
-			log.DefaultLogger.Debug(fmt.Sprintf("'%s'", groupByArgs[idx]))
-			return true, colId, groupByArgs[idx]
+
+	for _, groupByArg := range groupByArgs {
+		log.DefaultLogger.Debug(fmt.Sprintf("Checking if %s exists in data fields", groupByArg))
+		for idx, field := range fields {
+			// only sets idx if argument actually exists as a field in the data frame
+			// this ensures we're select a real column from the data frame
+			if field.Name == groupByArg {
+				log.DefaultLogger.Debug(fmt.Sprintf("Found %s in data fields", groupByArg))
+				return true, idx, groupByArg
+			}
 		}
+		log.DefaultLogger.Debug(fmt.Sprintf("Did not find %s in data fields", groupByArg))
 	}
-	log.DefaultLogger.Warn(fmt.Sprintf("Cant find %s column, defaulting to standard formating", groupByArgs[idx]))
+	log.DefaultLogger.Warn("Can't find any GROUP BY columns in data frame, defaulting to standard formatting")
 	return false, 0, ""
 }
 
@@ -120,20 +109,13 @@ func FilterDataFrameByType(df *data.Frame, typeValue interface{}, columnId int) 
 func SplitByUniqueColumnValues(frame *data.Frame, columnIndex int, name string) (splitFrames []*data.Frame) {
 	// return array of data.Frame grouped by unique values
 	uniqueTypes := GetUniqueColumnValues(frame, columnIndex)
-	// custom display configuration, hides field from visualization, legend
-	hideFromVisualization := map[string]interface{}{
-		"hideFrom": map[string]bool{
-			"viz":     true, // hide from plot
-			"legend":  true,
-			"tooltip": true,
-		},
-	}
 	for _, typeValue := range uniqueTypes {
 		tmpFrame, _ := FilterDataFrameByType(frame, typeValue, columnIndex)
-		tmpFrame.Name = fmt.Sprintf("%s %s ", name, fmt.Sprint(typeValue))
-		// hide column that is used to group by from visualization, legend
-		log.DefaultLogger.Debug("frame name: ", tmpFrame.Name)
-		tmpFrame.Fields[columnIndex].Config = &data.FieldConfig{Custom: hideFromVisualization}
+		tmpFrame.Name = fmt.Sprintf("%s%s ", name, fmt.Sprint(typeValue))
+		tmpFrame.Fields[columnIndex].Labels = map[string]string{
+			name: fmt.Sprint(typeValue),
+		}
+		log.DefaultLogger.Debug(fmt.Sprintf("frame name: %s", tmpFrame.Name))
 		splitFrames = append(splitFrames, tmpFrame)
 	}
 	return splitFrames
