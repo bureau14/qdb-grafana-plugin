@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -112,7 +113,7 @@ func getToken(settings *instanceSettings) (string, error) {
 		if host == "" {
 			errMsg := "host cannot be empty"
 			log.DefaultLogger.Error(errMsg)
-			return "", fmt.Errorf(errMsg)
+			return "", fmt.Errorf("%s", errMsg)
 		}
 		credential := settings.credential
 
@@ -330,6 +331,145 @@ func makeRequest(host string, query queryModel) (*http.Request, error) {
 	}
 }
 
+// hasTimeFieldIndex returns true if the data frame contains a time field.
+func hasTimeFieldIndex(frame *data.Frame) bool {
+	log.DefaultLogger.Debug("Finding time field index in frame")
+	for _, field := range frame.Fields {
+		if field.Type() == data.FieldTypeNullableTime {
+			return true
+		}
+	}
+	log.DefaultLogger.Debug("No time field found in frame")
+	return false
+}
+
+// hasStringColumn checks if the data frame contains at least one string column.
+func hasStringColumn(frame *data.Frame) bool {
+	log.DefaultLogger.Debug("Checking if frame has string column")
+	for _, field := range frame.Fields {
+		log.DefaultLogger.Debug(fmt.Sprintf("Field: %s, Type: %s", field.Name, field.Type()))
+		if field.Type() == data.FieldTypeNullableString {
+			return true
+		}
+	}
+	return false
+}
+
+// sortFrameByTimeIndex sorts a data frame by its timestamp index column in ascending order.
+// It uses an index-based approach to ensure that all fields in each row maintain their relationships.
+// This is needed as there is no sorting method available in the Grafana data frame API.
+func sortFrameByTimeIndex(frame *data.Frame) (*data.Frame, error) {
+	timeFieldIdx := frame.TimeSeriesSchema().TimeIndex
+	log.DefaultLogger.Debug(fmt.Sprintf("Sorting frame by time field at index: %d", timeFieldIdx))
+
+	// Create an index array which will be used to sort all fields
+	rowCount, err := frame.RowLen()
+	if err != nil {
+		return nil, err
+	}
+
+	indexes := make([]int, rowCount)
+	for i := 0; i < rowCount; i++ {
+		indexes[i] = i
+	}
+
+	// Sort index array by comparing timestamps from frame time field
+	sort.Slice(indexes, func(a, b int) bool {
+		// frame.At(column, row) returns interface{} (any), we know that timeFieldIdx is a time field
+		tA := frame.At(timeFieldIdx, indexes[a]).(*time.Time)
+		tB := frame.At(timeFieldIdx, indexes[b]).(*time.Time)
+		return tA.Before(*tB)
+	})
+
+	// Create new frame, keep metadata and refID
+	sorted := frame.EmptyCopy()
+	sorted.RefID = frame.RefID
+	sorted.SetMeta(frame.Meta)
+
+	// Build new frame by copying rows in the sorted order
+	for _, originalRow := range indexes {
+		sorted.AppendRow(frame.RowCopy(originalRow)...)
+	}
+
+	return sorted, nil
+}
+
+// convertToMultiDimensionalFormat creates multiple frames grouped by string columns
+// Checks prerequisites for wide format conversion
+// Converts data frame to wide format using data.LongToWide function.
+// For compatibility with panels that do not support wide format, it converts the wide frame into multiple frames. 
+func convertToMultiDimensionalFormat(frame *data.Frame) ([]*data.Frame, error) {
+	// This function handles converting results frame to multi-dimensional format by conversion from "long format" to "wide format" frame.
+	// https://grafana.com/developers/plugin-tools/key-concepts/data-frames#long-format
+	//
+	// Long format: This is how data arrives from most databases
+	// Name: Long
+	// Dimensions: 4 fields by 4 rows
+	// +---------------------+-----------------+-----------------+----------------+
+	// | Name: time          | Name: aMetric   | Name: bMetric   | Name: host     |
+	// | Labels:             | Labels:         | Labels:         | Labels:        |
+	// | Type: []time.Time   | Type: []float64 | Type: []float64 | Type: []string |
+	// +---------------------+-----------------+-----------------+----------------+
+	// | 2020-01-02 03:04:00 | 2               | 10              | foo            |
+	// | 2020-01-02 03:04:00 | 5               | 15              | bar            |
+	// | 2020-01-02 03:05:00 | 3               | 11              | foo            |
+	// | 2020-01-02 03:05:00 | 6               | 16              | bar            |
+	// +---------------------+-----------------+-----------------+----------------+
+	//
+	// Wide format: Each measurement-dimension combination becomes a separate column
+	// Name: Wide
+	// Dimensions: 5 fields by 2 rows
+	// +---------------------+------------------+------------------+------------------+------------------+
+	// | Name: time          | Name: aMetric    | Name: bMetric    | Name: aMetric    | Name: bMetric    |
+	// | Labels:             | Labels: host=foo | Labels: host=foo | Labels: host=bar | Labels: host=bar |
+	// | Type: []time.Time   | Type: []float64  | Type: []float64  | Type: []float64  | Type: []float64  |
+	// +---------------------+------------------+------------------+------------------+------------------+
+	// | 2020-01-02 03:04:00 | 2                | 10               | 5                | 15               |
+	// | 2020-01-02 03:05:00 | 3                | 11               | 6                | 16               |
+	// +---------------------+------------------+------------------+------------------+------------------+
+
+	// Check prerequisites for wide format conversion, we need at least one time field and one string column.
+	timeFieldIndex := hasTimeFieldIndex(frame)
+	if !hasStringColumn(frame) || !timeFieldIndex {
+		log.DefaultLogger.Debug("Frame lacks requirements for wide format conversion (needs both time field and string columns)")
+		return nil, fmt.Errorf("frame lacks requirements for wide format conversion (needs both time field and string columns)")
+	}
+
+	// For queries over multiple tables its not guaranteed that the data is ordered by time.
+	// data.LongToWide() expects sorted time-series data
+	// Ensure data is ordered before wide format conversion
+	sortedFrame, err := sortFrameByTimeIndex(frame)
+	if err != nil {
+		log.DefaultLogger.Error(fmt.Sprintf("Error sorting frame by time: %v", err))
+		return nil, err
+	}
+
+	// Convert from long format to wide format
+	wideFrame, err := data.LongToWide(sortedFrame, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// As not all panels support the wide time series data frame format convert wide frame to multiple frames
+	tsSchema := wideFrame.TimeSeriesSchema()
+	var frames []*data.Frame
+	for idx, field := range wideFrame.Fields {
+		if idx == tsSchema.TimeIndex {
+			continue
+		}
+
+		partialFrame := data.NewFrame("",
+			wideFrame.Fields[tsSchema.TimeIndex],
+			field,
+		)
+
+		frames = append(frames, partialFrame)
+	}
+	log.DefaultLogger.Debug("Wide time-series converted into multiple frames")
+
+	return frames, nil
+}
+
 func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, host string, token string) (*backend.DataResponse, error) {
 	// Unmarshal the json into our queryModel
 	var qm queryModel
@@ -345,7 +485,7 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 	if qm.QueryText == "" {
-		response.Error = fmt.Errorf("error: query cannot be empty. Aborting...")
+		response.Error = fmt.Errorf("query cannot be empty")
 		return &response, nil
 	}
 
@@ -444,17 +584,14 @@ func (td *SampleDatasource) query(ctx context.Context, query backend.DataQuery, 
 		)
 	}
 	log.DefaultLogger.Debug(fmt.Sprintf("Row count: %d", rowCount))
-	isGroupBy, columnIndex, columnName := IsGroupByQuery(qm.QueryText, frame.Fields)
-	if !isGroupBy {
-		log.DefaultLogger.Debug("Rendering single dimension")
+
+	frames, err := convertToMultiDimensionalFormat(frame)
+	if err != nil {
 		response.Frames = append(response.Frames, frame)
 	} else {
-		log.DefaultLogger.Debug("Rendering multiple dimensions, will split by group by arguments")
-		framePrefix := fmt.Sprintf("%s=", columnName)
-		log.DefaultLogger.Debug(fmt.Sprintf("Frames will be prefixed with: %s", framePrefix))
-		splitFrames := SplitByUniqueColumnValues(frame, columnIndex, framePrefix)
-		response.Frames = append(response.Frames, splitFrames...)
+		response.Frames = append(response.Frames, frames...)
 	}
+
 	return &response, nil
 }
 
