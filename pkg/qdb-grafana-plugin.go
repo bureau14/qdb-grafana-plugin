@@ -356,13 +356,13 @@ func hasStringColumn(frame *data.Frame) bool {
 }
 
 // sortFrameByTimeIndex sorts a data frame by its timestamp index column in ascending order.
-// It uses an index-based approach to ensure that all fields in each row maintain their relationships.
+// It uses an index-based approach to ensure row integrity
 // This is needed as there is no sorting method available in the Grafana data frame API.
 func sortFrameByTimeIndex(frame *data.Frame) (*data.Frame, error) {
 	timeFieldIdx := frame.TimeSeriesSchema().TimeIndex
 	log.DefaultLogger.Debug(fmt.Sprintf("Sorting frame by time field at index: %d", timeFieldIdx))
 
-	// Create an index array which will be used to sort all fields
+	// Create an index array which will be used to track row order
 	rowCount, err := frame.RowLen()
 	if err != nil {
 		return nil, err
