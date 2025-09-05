@@ -10,6 +10,11 @@ rm -Rf $GOPATH || true
 mkdir $GOPATH || true
 rm $GOPATH/go.mod || true
 
+node -v
+nvm install 20
+nvm use 20
+node -v
+
 ${YARN} install
 
 rm -Rf $GOPATH/src/github.com/magefile
