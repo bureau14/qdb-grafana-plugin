@@ -3,6 +3,7 @@ yarn-error.log
 /node_modules
 .vscode/
 .config
+.dist
 
 # tests
 qdb/
