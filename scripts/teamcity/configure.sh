@@ -19,6 +19,17 @@ case "$(uname)" in
         ;;
 esac
 
+# configure build environment
+
+NODE_VERSION=${NODE_VERSION:-"22"}
+NVM_DIR=${NVM_DIR:-"$HOME/.nvm"}
+
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+source $NVM_DIR/nvm.sh
+nvm install $NODE_VERSION
+
+node -v
+
 export NODEJS="${NODEJS}"
 export NODE_GYP="${NODE_GYP}"
 export NPM="${NPM}"
