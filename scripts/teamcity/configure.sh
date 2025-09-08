@@ -24,7 +24,7 @@ esac
 NODE_VERSION=${NODE_VERSION:-"22"}
 NVM_DIR=${NVM_DIR:-"$HOME/.nvm"}
 
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 
