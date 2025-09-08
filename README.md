@@ -2,11 +2,11 @@
 
 ## Introduction
 
-[QuasarDB](https://www.quasardb.net/why-quasardb/) is a high performance, limitless, time series database built to handle the most demanding use cases.
+[QuasarDB](https://www.quasardb.ai/why-quasardb/) is a high performance, limitless, time series database built to handle the most demanding use cases.
 
 This is the official QuasarDB Grafana Data Source plugin. It extends QuasarDB’s support to allow integration with the Grafana analytics and monitoring platform.
 
-![QDB Grafana Dashboard](https://doc.quasardb.net/master/_images/qdb_grafana_dash.png)
+![QDB Grafana Dashboard](https://doc.quasar.ai/master/_images/grafana_dash.png)
 
 ## Prerequisites
 
@@ -20,7 +20,7 @@ This documentation assumes you have:
 The easiest way to install the plugin is via the Grafana CLI
 
 ```
-grafana-cli --pluginUrl https://github.com/bureau14/qdb-grafana-plugin/archive/3.4.0.zip plugins install qdb-grafana-datasource
+grafana-cli --pluginUrl https://github.com/bureau14/qdb-grafana-plugin/archive/v3.14.1.zip plugins install qdb-grafana-datasource
 ```
 
 Alternatively, you can clone the git repository to your Grafana plugins directory (this is usually `/var/lib/grafana/plugins` on Linux-based systems)
@@ -43,7 +43,7 @@ It is recommended to leave Access set to Server (Default) unless you specificall
 
 If your cluster is not secured you just need to fill in the REST API URL (default is [http://localhost:40080](http://localhost:40080)) into the URL field as shown below:
 
-![Unsecured Configuration](https://doc.quasardb.net/master/_images/qdb_grafana_plugin_configuration_unsecured.png)
+![Unsecured Configuration](https://doc.quasar.ai/master/_images/grafana_plugin_configuration_unsecured.png)
 
 If your cluster is secured make sure to use the secure REST API URL (default is [https://localhost:40443](https://localhost:40443)) when filling in the URL field.
 
@@ -54,7 +54,7 @@ You may need to check Skip TLS Verify under Auth settings if you are using a sel
 
 Check the Use Secure Cluster checkbox and fill in the User name and User secret fields using the information found in your user private key file as shown below:
 
-![Unsecured Configuration](https://doc.quasardb.net/master/_images/qdb_grafana_plugin_configuration_secured.png)
+![Unsecured Configuration](https://doc.quasar.ai/master/_images/grafana_plugin_configuration_secured.png)
 
 After you are done, click Save & Test and you are ready to starting creating visualizations using QuasarDB.
 
@@ -69,7 +69,7 @@ Which result format you need will be specified by the visualization you are usin
 
 When defining a query for your visualization you should specify whether you was like to format the result as either `Time series` or a `Table` by selecting an option from the `FORMAT AS` dropdown in the query editor as shown below:
 
-![Query Editor Format As](https://doc.quasardb.net/master/_images/qdb_grafana_query.png)
+### Query Editor Format
 
 In additional to normal query syntax you can use the `$__range` and `$__interval` variables provided by Grafana.
 
@@ -85,7 +85,7 @@ Could be written to use Grafana's variables like this:
 SELECT * FROM stocks.apple IN $__range GROUP BY $__interval
 ```
 
-For information on query syntax see our [docs](https://doc.quasardb.net/master/queries/select.html) for more information.
+For information on query syntax see our [docs](https://doc.quasar.ai/master/user-guide/integration/grafana.html) for more information.
 
 ## Troubleshooting
 
