@@ -19,9 +19,23 @@ case "$(uname)" in
         ;;
 esac
 
+# Select node version and make sure that yarn is included
+NVM_DIR=${NVM_DIR:-"$HOME/.nvm"}
+NODE_VERSION=${NODE_VERSION:-"16"}
+
+source $NVM_DIR/nvm.sh
+nvm install $NODE_VERSION
+npm install --global yarn
+
+# install nodejs dependencies
+${YARN} install
+
+# export variables for build scripts
 export NODEJS="${NODEJS}"
 export NODE_GYP="${NODE_GYP}"
 export NPM="${NPM}"
 export YARN="${YARN}"
 
-export NODE_OPTIONS=--openssl-legacy-provider
+if NODE_VERSION=$(node -v | sed 's/v\([0-9]*\).*/\1/'); [ "$NODE_VERSION" -gt 17 ]; then
+    export NODE_OPTIONS=--openssl-legacy-provider
+fi
