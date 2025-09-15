@@ -1,4 +1,3 @@
-
 -----BEGIN PGP SIGNED MESSAGE-----
 Hash: SHA512
 
@@ -8,33 +7,32 @@ Hash: SHA512
   "signedByOrg": "quasardb",
   "signedByOrgName": "quasardb",
   "plugin": "quasardb-datasource",
-  "version": "3.14.1",
-  "time": 1704858117021,
+  "version": "3.14.2",
+  "time": 1757928223520,
   "keyId": "7e4d0c6a708866e7",
   "files": {
-    "LICENSE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
-    "CHANGELOG.md": "aaa78be4710ef41d56ddab1edbd180ef9f9adfea2f293109aae925dc33a1b9b3",
-    "gpx_qdb-grafana-plugin_linux_arm64": "e9809119ee1366d03e5ffcd8953ff42f89ee5234b5171bbf9bb01b94ba22f1ed",
     "module.js.LICENSE.txt": "0d8f66cd4afb566cb5b7e1540c68f43b939d3eba12ace290f18abc4f4cb53ed0",
-    "module.js.map": "421254e4af3353b52a7af5dfd75ebb01c40e7d8d004cb1b59e0ed006a34b08df",
-    "plugin.json": "c2747e6dda55373bdfce5a461072e81375a547590838869492a1d2f5d1f269be",
-    "README.md": "05304ce21844989866afc8aa01688922e472e691c7d5361f166d65ce80070d36",
+    "module.js.map": "f22a4e6e7d181649ff40e6e942a5bd1244f3b17f85b8a839c204a4bc71faa649",
+    "gpx_qdb-grafana-plugin_linux_arm": "4c122c7b7cbf1afdb8650b8999a8196628f74868f0566c3d5dfdef73ce77c469",
+    "README.md": "342705dcb8edbdb0b6e598bf00e58d3c18192e6aec8eed59ead4702c94919c2a",
+    "gpx_qdb-grafana-plugin_darwin_amd64": "7665efa2d89574830078cb8a1d13e75d52ddf9369cc3022ab9a3f140c93bd8a5",
     "img/logo.svg": "1defc6f7e585c67657bcfd8fddc599ee7dfa82f8674413f49fa274c2cd453ec6",
-    "gpx_qdb-grafana-plugin_windows_amd64.exe": "6012dca13621b007fec07890d5242d3aa69d899440fae1cdc56a87a4466923c8",
-    "module.js": "05bef6c2b3d02dfbfea1b37fbc1d00bc7b26ddad982eb83561576ae4bdff5957",
-    "gpx_qdb-grafana-plugin_darwin_amd64": "d9a56c6b71a33ac7183089b2c82352e857d484a34015d59f98726ff60790aca3",
-    "gpx_qdb-grafana-plugin_linux_arm": "f7c2c2514530d9b2c3096990c2cfae6203d072782704beee94fb17bab3b96ecf",
-    "gpx_qdb-grafana-plugin_linux_amd64": "ece28aa9754ca0d127617fc2484bad716225c3fabf9a5908d94c057a31a24e47"
+    "plugin.json": "b0441ed8d5b50c43884da120aae6004e2ed942508ad351053f46319ee7cd25d8",
+    "gpx_qdb-grafana-plugin_windows_amd64.exe": "e7b158588bab49461cbfe5a1da42841386b100fe6d53d75827f2e082460842f4",
+    "CHANGELOG.md": "aaa78be4710ef41d56ddab1edbd180ef9f9adfea2f293109aae925dc33a1b9b3",
+    "LICENSE": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1",
+    "gpx_qdb-grafana-plugin_linux_amd64": "91a4bc016a96036b6b091ae604bf8b46149c974bdeb34c54833b60cab70e6b55",
+    "module.js": "ba406d8e36c30cf35ecf81bf6da6410bf35cd3842f361aaf880f6f4d5c13d3bb",
+    "gpx_qdb-grafana-plugin_linux_arm64": "c352d5aeb57a49aab7861b4856f68fc496404581293a04394b866122cabfd312"
   }
 }
 -----BEGIN PGP SIGNATURE-----
-Version: OpenPGP.js v4.10.10
-Comment: https://openpgpjs.org
 
-wrcEARMKAAYFAmWeEgUAIQkQfk0ManCIZucWIQTzOyW2kQdOhGNlcPN+TQxq
-cIhm5/7VAgjSCDlSlkVdVCmLs8EKXpeKAdC2ErWTQdai1kWL1qezLf4HxkvE
-wrUAoSswvGWEGbijMT/U9KeF8Bg/6wCjuhMXIQIIqCP10fW2gkCNZO7PHxXD
-PFq3DDrZMVoT0JR8eQDwVUlZZjp25KKFmNTN+MW2PucPO7eWzhwlwOkWFzou
-blTMwSo=
-=kquc
+wsA+BAETCgBtBYJox9sfCZB+TQxqcIhm50UUAAAAAAAcACBzYWx0QG5vdGF0
+aW9ucy5vcGVucGdwanMub3Jnv16QzP0P8hWQ7dDHgyD9F5qZfTI5f8b5G6Er
+3sUtJCMWIQTzOyW2kQdOhGNlcPN+TQxqcIhm5wAAzBgCCN3abyN9Prc/uKqV
+On1wJ6q0JoUBI6P47pCmD9i7440qdeE5igdJtbkTzM3r0v2IAauWubb9KSMu
+Zn+KRCCRB424AgkBDHfSUvTpm4eaUQuyyRwcm4L31dV0/e4AXd50oJl807ja
+/aImGw3wNqJni13/ZanJOlxs7h5uc+7NrHtPclv2jLw=
+=MYmw
 -----END PGP SIGNATURE-----
