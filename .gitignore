@@ -47,3 +47,7 @@ e2e-results/
 
 # Editor
 .idea
+
+# Build
+
+dist/
