@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
 rm qdb-grafana-plugin.zip || true
-zip -vr qdb-grafana-plugin dist
+mv dist quasardb-datasource
+zip -vr qdb-grafana-plugin quasardb-datasource
