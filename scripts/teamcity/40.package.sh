@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 
 rm qdb-grafana-plugin.zip || true
-zip -vr qdb-grafana-plugin dist
+mv dist qdb-grafana-plugin
+zip -vr qdb-grafana-plugin qdb-grafana-plugin
