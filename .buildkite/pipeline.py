@@ -35,13 +35,15 @@ PLATFORMS: list[Platform] = [
 ]
 BUILD_TYPES = ["Release"]
 
+GO_VERSION_SLUG = "124"
+
 AGENT_ENV: dict[str, str] = {
     "NODE_VERSION": "16.20.2",
     "NODEJS_CMD": "$$QDB_CICD_AGENT_NODEJS_PATH",
     "NODE_GYP_CMD": "$$QDB_CICD_AGENT_NODE_GYP_PATH",
     "YARN_CMD": "$$QDB_CICD_AGENT_YARN_PATH",
-    "GOPATH": f"$$QDB_CICD_AGENT_GO124_PATH",
-    "GOROOT": f"$$QDB_CICD_AGENT_GO124_ROOT",
+    "GOPATH": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_PATH",
+    "GOROOT": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_ROOT",
 
 }
 
@@ -71,6 +73,9 @@ def generate_pipeline() -> Pipeline:
                 "download": {
                     "variant": slug,
                     "git-ref": git_ref,
+                    "by_project": {
+                        "variant": f"{slug}-go{GO_VERSION_SLUG}"
+                    }
                 },
                 "upload": {
                     "variant": slug,
