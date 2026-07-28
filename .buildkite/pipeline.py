@@ -28,7 +28,7 @@ from qdb_pipeline import (  # noqa: E402
 
 STEPS_DIR = Path(__file__).parent / "steps"
 
-_LINUX = {"docker_image": "bureau14/builder:rhel7"}
+_LINUX = {}
 PLATFORMS: list[Platform] = [
     dataclasses.replace(platform, **_LINUX)
     for platform in select_platforms("linux-amd64-core2")
@@ -85,7 +85,7 @@ def generate_pipeline() -> Pipeline:
 
             step = load_template(STEPS_DIR / "_build.yml", **template_vars)
             step["env"] = _env(platform, build_type)
-            apply_docker(step, platform.docker_image)
+            # apply_docker(step, platform.docker_image)
             set_artifact_plugin_options(step, artifact_options)
             pipeline.add_step(CommandStep.from_dict(step))
 
