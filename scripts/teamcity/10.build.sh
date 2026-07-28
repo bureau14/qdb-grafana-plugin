@@ -27,6 +27,6 @@ popd
 export CGO_ENABLED=0
 
 rm -Rf dist
-mage -v
+$GOPATH/bin/mage -v
 
 ${YARN} build
