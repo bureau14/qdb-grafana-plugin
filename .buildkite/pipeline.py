@@ -74,7 +74,9 @@ def generate_pipeline() -> Pipeline:
                     "variant": slug,
                     "git-ref": git_ref,
                     "by_project": {
-                        "variant": f"{slug}-go{GO_VERSION_SLUG}"
+                        "qdb-api-rest": {
+                            "variant": f"{slug}-go{GO_VERSION_SLUG}"
+                        }
                     }
                 },
                 "upload": {
