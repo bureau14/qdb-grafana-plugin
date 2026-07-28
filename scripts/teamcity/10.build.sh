@@ -19,7 +19,7 @@ pushd $PWD
 cd $GOPATH
 git clone --depth 1 -b v1.14.0 https://github.com/magefile/mage
 cd mage
-go run bootstrap.go
+$GO run bootstrap.go
 popd
 
 # build plugin

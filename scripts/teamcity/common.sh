@@ -37,11 +37,15 @@ npm install --global yarn
 # install nodejs dependencies
 ${YARN} install
 
+GO="${GOROOT:+${GOROOT}/bin/go}"
+GO="${GO:-go}"
+
 # export variables for build scripts
 export NODEJS="${NODEJS}"
 export NODE_GYP="${NODE_GYP}"
 export NPM="${NPM}"
 export YARN="${YARN}"
+export GO
 
 if NODE_VERSION=$(node -v | sed 's/v\([0-9]*\).*/\1/'); [ "$NODE_VERSION" -gt 17 ]; then
     export NODE_OPTIONS=--openssl-legacy-provider
