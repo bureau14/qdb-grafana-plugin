@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Always stop both test services. Cleanup failures must not hide the build result.
+
+SCRIPT_PATH="scripts/tests/setup/stop-services.sh"
+if [ -f "$SCRIPT_PATH" ]; then
+    bash "$SCRIPT_PATH"
+fi
+
+SCRIPT_PATH="scripts/tests/rest-setup/stop-services.sh"
+if [ -f "$SCRIPT_PATH" ]; then
+    bash "$SCRIPT_PATH"
+fi
+
+exit 0

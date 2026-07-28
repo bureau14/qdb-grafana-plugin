@@ -23,7 +23,14 @@ esac
 NVM_DIR=${NVM_DIR:-"$HOME/.nvm"}
 NODE_VERSION=${NODE_VERSION:-"16"}
 
-source $NVM_DIR/nvm.sh
+# TODO: igor
+# this should be removed / handled from docker builder
+if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
+    echo "Installing nvm into $NVM_DIR"
+    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+fi
+
+source "$NVM_DIR/nvm.sh"
 nvm install $NODE_VERSION
 npm install --global yarn
 

@@ -1,0 +1,39 @@
+agents:
+  queue: "{queue}"
+
+label: "{name} ({slug})"
+key: "build-{slug}"
+
+commands:
+  - bash scripts/teamcity/10.build.sh
+  - bash scripts/tests/setup/start-services.sh
+  - bash scripts/tests/rest-setup/start-services.sh
+  - bash scripts/teamcity/20.test.sh
+  - bash scripts/teamcity/30.sign.sh
+  - npx @grafana/sign-plugin@3.2.0
+  - bash scripts/teamcity/40.package.sh
+
+plugins:
+  - bureau14/qdb-artifacts#master:
+      download:
+        clean: true
+        projects:
+          - project_id: "quasardb-build"
+            output-dir: "qdb"
+            extract: true
+            files:
+              - "*-server.tar.zst!*"
+              - "*-utils.tar.zst!*"
+          - project_id: "qdb-api-rest"
+            output-dir: "qdb"
+            extract: true
+            files:
+              - "*.tar.gz!*"
+      upload:
+        files:
+          - "qdb-grafana-plugin.zip"
+  - bureau14/qdb-test-report#master:
+      title: "Test report {slug}"
+      job:
+        variant: "{slug}"
+        junit_input_path: "coverage/junit.xml"
