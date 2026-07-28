@@ -44,6 +44,7 @@ AGENT_ENV: dict[str, str] = {
     "GOPATH": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_PATH",
     "GOROOT": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_ROOT",
     "GOFLAGS": "-buildvcs=false",
+    "GRAFANA_PLUGIN_SIGNING_TOKEN_SSM_PARAM": "/services/buildkite/credentials/grafana/signing-token"
 }
 
 
