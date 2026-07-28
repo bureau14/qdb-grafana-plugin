@@ -44,8 +44,8 @@ AGENT_ENV: dict[str, str] = {
     # "YARN_CMD": "$$QDB_CICD_AGENT_YARN_PATH",
     "GOPATH": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_PATH",
     "GOROOT": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_ROOT",
-
 }
+
 
 def _env(platform: Platform, build_type: str) -> dict[str, str]:
     """Compose the Buildkite environment for the sole supported target."""
@@ -74,10 +74,8 @@ def generate_pipeline() -> Pipeline:
                     "variant": slug,
                     "git-ref": git_ref,
                     "by_project": {
-                        "qdb-api-rest": {
-                            "variant": f"{slug}-go{GO_VERSION_SLUG}"
-                        }
-                    }
+                        "qdb-api-rest": {"variant": f"{slug}-go{GO_VERSION_SLUG}"}
+                    },
                 },
                 "upload": {
                     "variant": slug,

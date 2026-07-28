@@ -37,6 +37,8 @@ npm install --global yarn
 # install nodejs dependencies
 ${YARN} install
 
+# Mage invokes `go` internally, so the agent-provided Go toolchain must be on PATH.
+export PATH="${GOROOT:+${GOROOT}/bin:}${GOPATH:+${GOPATH}/bin:}${PATH}"
 GO="${GOROOT:+${GOROOT}/bin/go}"
 GO="${GO:-go}"
 
