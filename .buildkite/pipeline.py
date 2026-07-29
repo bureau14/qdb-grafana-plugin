@@ -38,13 +38,13 @@ BUILD_TYPES = ["Release"]
 GO_VERSION_SLUG = "124"
 
 AGENT_ENV: dict[str, str] = {
-    "NODE_VERSION": "16.20.2",
+    "NODE_VERSION": "16",
     "NODEJS_CMD": "$$QDB_CICD_AGENT_NODEJS_PATH",
     "NODE_GYP_CMD": "$$QDB_CICD_AGENT_NODE_GYP_PATH",
     "GOPATH": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_PATH",
     "GOROOT": f"$$QDB_CICD_AGENT_GO{GO_VERSION_SLUG}_ROOT",
     "GOFLAGS": "-buildvcs=false",
-    "GRAFANA_PLUGIN_SIGNING_TOKEN_SSM_PARAM": "/services/buildkite/credentials/grafana/signing-token"
+    "GRAFANA_PLUGIN_SIGNING_TOKEN_SSM_PARAM": "/services/buildkite/credentials/grafana/signing-token",
 }
 
 
@@ -86,7 +86,6 @@ def generate_pipeline() -> Pipeline:
 
             step = load_template(STEPS_DIR / "_build.yml", **template_vars)
             step["env"] = _env(platform, build_type)
-            # apply_docker(step, platform.docker_image)
             set_artifact_plugin_options(step, artifact_options)
             pipeline.add_step(CommandStep.from_dict(step))
 
