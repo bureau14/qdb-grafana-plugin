@@ -23,31 +23,18 @@ esac
 NVM_DIR=${NVM_DIR:-"$HOME/.nvm"}
 NODE_VERSION=${NODE_VERSION:-"16"}
 
-# TODO: igor
-# this should be removed / handled from docker builder
-if [[ ! -s "$NVM_DIR/nvm.sh" ]]; then
-    echo "Installing nvm into $NVM_DIR"
-    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-fi
-
-source "$NVM_DIR/nvm.sh"
+source $NVM_DIR/nvm.sh
 nvm install $NODE_VERSION
 npm install --global yarn
 
 # install nodejs dependencies
 ${YARN} install
 
-# Mage invokes `go` internally, so the agent-provided Go toolchain must be on PATH.
-export PATH="${GOROOT:+${GOROOT}/bin:}${GOPATH:+${GOPATH}/bin:}${PATH}"
-GO="${GOROOT:+${GOROOT}/bin/go}"
-GO="${GO:-go}"
-
 # export variables for build scripts
 export NODEJS="${NODEJS}"
 export NODE_GYP="${NODE_GYP}"
 export NPM="${NPM}"
 export YARN="${YARN}"
-export GO
 
 if NODE_VERSION=$(node -v | sed 's/v\([0-9]*\).*/\1/'); [ "$NODE_VERSION" -gt 17 ]; then
     export NODE_OPTIONS=--openssl-legacy-provider
