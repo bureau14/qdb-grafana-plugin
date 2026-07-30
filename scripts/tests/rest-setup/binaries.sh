@@ -30,7 +30,13 @@ case "$(uname)" in
     MINGW*)
         QDB_REST=${QDB_REST}.exe
     ;;
+    Darwin*)
+        # The extracted Buildkite artifacts colocate qdb_rest and libqdb_api.
+        export DYLD_LIBRARY_PATH="${QDB_DIR}${DYLD_LIBRARY_PATH:+:${DYLD_LIBRARY_PATH}}"
+    ;;
     *)
+        # The extracted Buildkite artifacts colocate qdb_rest and libqdb_api.
+        export LD_LIBRARY_PATH="${QDB_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
     ;;
 esac
 
