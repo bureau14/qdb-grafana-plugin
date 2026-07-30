@@ -19,8 +19,5 @@ if [[ -z "${GRAFANA_ACCESS_POLICY_TOKEN:-}" ]]; then
 fi
 set -x
 
-# Grafana requires every packaged backend executable to be exactly 0755.
-find dist -maxdepth 1 -type f -name 'gpx_qdb-grafana-plugin_*' -exec chmod 0755 {} +
-
 ${YARN} sign --rootUrls https://quasardb.net
 "${NVM_BIN}/npx" @grafana/sign-plugin@3.2.0
