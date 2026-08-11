@@ -73,19 +73,21 @@ def generate_pipeline() -> Pipeline:
             artifact_options = {
                 "download": {
                     "variant": slug,
-                    "git-ref": git_ref,
+                    "git_ref": git_ref,
                     "by_project": {
                         "qdb-api-rest": {"variant": f"{slug}-go{GO_VERSION_SLUG}"}
                     },
                 },
                 "upload": {
                     "variant": slug,
-                    "git-ref": git_ref,
+                    "git_ref": git_ref,
                 },
             }
 
             step = load_template(STEPS_DIR / "_build.yml", **template_vars)
-            step["env"] = _env(platform, build_type)
+            env = _env(platform, build_type)
+            env.update(step.get("env") or {})
+            step["env"] = env
             set_artifact_plugin_options(step, artifact_options)
             pipeline.add_step(CommandStep.from_dict(step))
 
