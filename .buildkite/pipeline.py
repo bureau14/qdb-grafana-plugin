@@ -35,7 +35,7 @@ PLATFORMS: list[Platform] = [
 ]
 BUILD_TYPES = ["Release"]
 
-GO_VERSION_SLUG = "124"
+GO_VERSION_SLUG = "127"  # Go 1.27
 
 AGENT_ENV: dict[str, str] = {
     "NODE_VERSION": "16",
