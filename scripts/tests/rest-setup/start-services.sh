@@ -14,7 +14,8 @@ echo "qdbsh seeding"
 qdbsh_seed_db
 
 echo "qdb rest:"
-ARGS_REST=""
+# HTTP is off by default; HTTPS and Flight SQL always listen, so pin all three to loopback.
+ARGS_REST="--listen-http ${URI_REST_INSECURE} --listen-https ${URI_REST_SECURE} --listen-flight ${URI_REST_FLIGHT} --cluster ${URI_CLUSTER}"
 qdb_rest_start "${ARGS_REST}" ${CONSOLE_LOG_REST} ${CONSOLE_ERR_LOG_REST}
 
 sleep_time=5

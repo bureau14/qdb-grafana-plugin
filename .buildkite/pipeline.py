@@ -71,13 +71,7 @@ def generate_pipeline() -> Pipeline:
                 "name": slug.replace("-", " ").title(),
             }
             artifact_options = {
-                "download": {
-                    "variant": slug,
-                    "git_ref": git_ref,
-                    "by_project": {
-                        "qdb-api-rest": {"variant": f"{slug}-go{GO_VERSION_SLUG}"}
-                    },
-                },
+                "download": {"variant": slug, "git_ref": git_ref},
                 "upload": {
                     "variant": slug,
                     "git_ref": git_ref,
