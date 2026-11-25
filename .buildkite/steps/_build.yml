@@ -2,7 +2,7 @@ agents:
   queue: "{queue}"
 
 label: "{name} ({slug})"
-key: "build-{slug}"
+step_id: build
 
 commands:
   - bash scripts/cicd/10.build.sh
@@ -18,12 +18,14 @@ plugins:
         clean: true
         projects:
           - project_id: "quasardb-build"
+            step: build
             output-dir: "qdb"
             extract: true
             files:
               - "*-server.tar.zst!*"
               - "*-utils.tar.zst!*"
           - project_id: "qdb-api-rest"
+            step: build
             output-dir: "qdb"
             extract: true
             files:
